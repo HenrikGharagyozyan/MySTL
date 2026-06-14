@@ -66,7 +66,7 @@ namespace mystl
     {
         if (other.is_sso())
         {
-            for (size_type i = 0; i <= size_; ++i) // Копируем вместе с \0
+            for (size_type i = 0; i <= size_; ++i) // Copy including the terminating null character
                 sso_data_[i] = other.sso_data_[i];
         }
         else
@@ -90,7 +90,7 @@ namespace mystl
         else
             heap_data_ = other.heap_data_;
 
-        // Переводим "украденный" объект в валидный дефолтный стейт SSO
+        // Bring the stolen object into a valid default SSO state
         other.size_ = 0;
         other.capacity_ = SSO_CAPACITY;
         other.sso_data_[0] = '\0';
@@ -109,7 +109,7 @@ namespace mystl
         if (this == &other)
             return *this;
 
-        // Освобождаем старую кучу, если она была
+        // Free the old heap allocation if it existed
         if (!is_sso() && heap_data_)
             alloc_.deallocate(heap_data_, capacity_ + 1);
 
@@ -165,7 +165,7 @@ namespace mystl
 
     void String::reserve(size_type new_capacity)
     {
-        // Никогда не уменьшаем емкость через reserve
+        // Never reduce capacity via reserve
         if (new_capacity <= capacity_)
             return;
 

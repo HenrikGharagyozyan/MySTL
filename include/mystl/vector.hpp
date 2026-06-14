@@ -565,7 +565,7 @@ namespace mystl
             for (size_type i = index; i < size_ - 1; ++i)
                 data_[i] = mystl::move(data_[i + 1]);
 
-            // Разрушаем ставший лишним последний элемент
+            // Destroy the now-unneeded last element
             --size_;
             alloc_.destroy(data_ + size_);
 

@@ -2,9 +2,9 @@
 #include <stdexcept>
 #include "mystl/deque.hpp"
 #include "mystl/string.hpp"
-#include "mystl/utility.hpp" // Если у тебя там реализован mystl::move
+#include "mystl/utility.hpp" // If you have mystl::move implemented there
 
-// Тестовая структура для строгой проверки утечек памяти
+// Test structure for strict memory leak checking
 struct Tracker 
 {
     static int instances;
@@ -29,7 +29,7 @@ TEST(DequeTest, PushAndPop)
 {
     mystl::Deque<int> d;
     
-    // Проверка push_back и аллокации новых блоков
+    // Check push_back and allocation of new blocks
     for (int i = 0; i < 1000; ++i) 
     {
         d.push_back(i);
@@ -38,7 +38,7 @@ TEST(DequeTest, PushAndPop)
     EXPECT_EQ(d.front(), 0);
     EXPECT_EQ(d.back(), 999);
 
-    // Проверка push_front и аллокации блоков в начале
+    // Check push_front and block allocation at the beginning
     for (int i = 1; i <= 500; ++i) 
     {
         d.push_front(-i);
@@ -46,14 +46,14 @@ TEST(DequeTest, PushAndPop)
     EXPECT_EQ(d.size(), 1500);
     EXPECT_EQ(d.front(), -500);
 
-    // Проверка pop_front
+    // Check pop_front
     for (int i = 0; i < 500; ++i) 
     {
         d.pop_front();
     }
     EXPECT_EQ(d.front(), 0);
 
-    // Проверка pop_back
+    // Check pop_back
     for (int i = 0; i < 500; ++i) 
     {
         d.pop_back();
@@ -73,12 +73,12 @@ TEST(DequeTest, IteratorsAndElementAccess)
     }
     EXPECT_EQ(sum, 150);
 
-    // Арифметика итераторов O(1)
+    // O(1) iterator arithmetic
     auto it = d.begin();
     EXPECT_EQ(*(it + 2), 30);
     EXPECT_EQ(*(d.end() - 1), 50);
     
-    // Прямой доступ
+    // Direct access
     EXPECT_EQ(d[1], 20);
     EXPECT_EQ(d.at(3), 40);
     EXPECT_THROW(d.at(10), std::out_of_range);
@@ -86,7 +86,7 @@ TEST(DequeTest, IteratorsAndElementAccess)
 
 TEST(DequeTest, MemoryManagement) 
 {
-    Tracker::instances = 0; // Сбрасываем счетчик перед тестом
+    Tracker::instances = 0; // Reset the counter before the test
     {
         mystl::Deque<Tracker> d;
         for (int i = 0; i < 1000; ++i) 
@@ -97,12 +97,12 @@ TEST(DequeTest, MemoryManagement)
         
         d.pop_front();
         d.pop_back();
-        EXPECT_EQ(Tracker::instances, 998); // Должно уничтожиться 2 объекта
+        EXPECT_EQ(Tracker::instances, 998); // 2 objects should be destroyed
         
         d.clear();
-        EXPECT_EQ(Tracker::instances, 0); // Память полностью очищена
+        EXPECT_EQ(Tracker::instances, 0); // Memory is fully cleaned up
     }
-    EXPECT_EQ(Tracker::instances, 0); // Проверка после выхода из scope
+    EXPECT_EQ(Tracker::instances, 0); // Check after leaving the scope
 }
 
 TEST(DequeTest, CopyAndMoveSemantics) 
@@ -117,6 +117,6 @@ TEST(DequeTest, CopyAndMoveSemantics)
     EXPECT_EQ(d3.size(), 3);
     EXPECT_EQ(d3[2], 3);
     
-    EXPECT_EQ(d1.size(), 0); // Оригинал должен стать пустым после move
+    EXPECT_EQ(d1.size(), 0); // The original should become empty after move
     EXPECT_TRUE(d1.empty());
 }

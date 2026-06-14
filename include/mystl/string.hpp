@@ -21,7 +21,7 @@ namespace mystl
         using const_pointer = const value_type* ;
 
         // ========================================================================
-        // ВЛОЖЕННЫЕ КЛАССЫ ИТЕРЕАТОРОВ
+        // NESTED ITERATOR CLASSES
         // ========================================================================
         class ConstIterator;
 
@@ -108,7 +108,7 @@ namespace mystl
 
         public:
             ConstIterator() = default;
-            // Конструктор конвертации из обычного итератора в константный
+            // Conversion constructor from a non-const iterator to a const iterator
             ConstIterator(const Iterator& other) : ptr_(other.ptr_) {}
 
             reference operator*() const { return* ptr_; }
@@ -186,7 +186,7 @@ namespace mystl
         }
 
     public:
-        // Итераторы
+        // Iterators
         iterator begin() noexcept { return iterator(data_ptr()); }
         iterator end() noexcept { return iterator(data_ptr() + size_); }
         const_iterator begin() const noexcept { return const_iterator(data_ptr()); }
@@ -194,7 +194,7 @@ namespace mystl
         const_iterator cbegin() const noexcept { return const_iterator(data_ptr()); }
         const_iterator cend() const noexcept { return const_iterator(data_ptr() + size_); }
 
-        // Конструкторы и Rule of Five
+        // Constructors and Rule of Five
         String() noexcept;
         String(const char* s);
         String(size_type count, char ch);
@@ -205,7 +205,7 @@ namespace mystl
         String& operator=(const String& other);
         String& operator=(String&& other) noexcept;
 
-        // Базовый доступ
+        // Basic access
         [[nodiscard]] const char* c_str() const noexcept { return data_ptr(); }
         [[nodiscard]] size_type size() const noexcept { return size_; }
         [[nodiscard]] size_type capacity() const noexcept { return capacity_; }
@@ -214,7 +214,7 @@ namespace mystl
         reference operator[](size_type i) noexcept { return data_ptr()[i]; }
         const_reference operator[](size_type i) const noexcept { return data_ptr()[i]; }
 
-        // Модификаторы и операции (заглушки для реализации)
+        // Modifiers and operations (implementation placeholders)
         void clear() noexcept;
         void reserve(size_type new_capacity);
         void push_back(char ch);

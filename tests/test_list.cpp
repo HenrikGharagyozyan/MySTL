@@ -46,10 +46,10 @@ TEST(ListTest, CopySemantics)
     mystl::List<int> lst2 = lst1; // Copy constructor
 
     EXPECT_EQ(lst2.size(), 3);
-    EXPECT_EQ(lst2, lst1); // Использует наш operator==
+    EXPECT_EQ(lst2, lst1); // Uses our operator==
 
     lst2.push_back(40);
-    EXPECT_NE(lst1, lst2); // Изменение копии не влияет на оригинал
+    EXPECT_NE(lst1, lst2); // Changing the copy does not affect the original
 }
 
 TEST(ListTest, MoveSemantics) 
@@ -60,7 +60,7 @@ TEST(ListTest, MoveSemantics)
 
     mystl::List<mystl::String> lst2 = mystl::move(lst1); // Move constructor
 
-    EXPECT_EQ(lst1.size(), 0); // Оригинал пуст
+    EXPECT_EQ(lst1.size(), 0); // The original is empty
     EXPECT_TRUE(lst1.empty());
     
     EXPECT_EQ(lst2.size(), 2);
@@ -71,9 +71,9 @@ TEST(ListTest, InsertAndErase)
 {
     mystl::List<int> lst = {1, 3};
     auto it = lst.begin();
-    ++it; // указываем на 3
+    ++it; // Point to 3
     
-    lst.insert(it, 2); // Вставляем 2 перед 3
+    lst.insert(it, 2); // Insert 2 before 3
     EXPECT_EQ(lst.size(), 3);
     
     auto it_check = lst.begin();

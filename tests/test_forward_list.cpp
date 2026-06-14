@@ -16,7 +16,7 @@ TEST(ForwardListTest, PushAndPopFront)
     flist.push_front(20);
     flist.push_front(30);
 
-    // Ожидаемый порядок: 30 -> 20 -> 10
+    // Expected order: 30 -> 20 -> 10
     EXPECT_FALSE(flist.empty());
     EXPECT_EQ(flist.front(), 30);
 
@@ -34,16 +34,16 @@ TEST(ForwardListTest, InsertAndEraseAfter)
 {
     mystl::ForwardList<int> flist;
     
-    // Вставка в самое начало через before_begin()
+    // Insert at the very beginning via before_begin()
     auto it = flist.insert_after(flist.before_begin(), 1);
     
-    // Вставка после первого элемента
+    // Insert after the first element
     flist.insert_after(it, 2);
 
-    // Ожидаем: 1 -> 2
+    // Expect: 1 -> 2
     EXPECT_EQ(flist.front(), 1);
 
-    // Удаляем элемент после before_begin (удаляем 1)
+    // Remove the element after before_begin (remove 1)
     flist.erase_after(flist.before_begin());
     
     EXPECT_EQ(flist.front(), 2);
@@ -53,15 +53,15 @@ TEST(ForwardListTest, CopyAndMoveSemantics)
 {
     mystl::ForwardList<int> flist1 = {1, 2, 3};
     
-    // Копирование
+    // Copying
     mystl::ForwardList<int> flist2 = flist1;
     EXPECT_EQ(flist1, flist2);
 
-    // Изменение копии
+    // Modifying the copy
     flist2.push_front(0);
     EXPECT_NE(flist1, flist2);
 
-    // Перемещение
+    // Moving
     mystl::ForwardList<int> flist3 = mystl::move(flist1);
     EXPECT_TRUE(flist1.empty());
     

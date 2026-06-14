@@ -5,6 +5,7 @@
 #include <memory>
 #include <stdexcept>
 #include <cassert>
+
 #include "allocator.hpp"
 #include "utility.hpp"
 
@@ -28,11 +29,11 @@ namespace mystl
         using map_pointer = T**;
         using Self        = DequeIterator;
 
-        // Ключевая оптимизация: 4 указателя для O(1) итерации без деления
-        T* cur;       // Указывает на текущий элемент
-        T* first;     // Указывает на начало текущего блока
-        T* last;      // Указывает на конец текущего блока (не включительно)
-        map_pointer node; // Указывает на саму карту блоков
+        // Key optimization: 4 pointers for O(1) iteration without division
+        T* cur;       // Points to the current element
+        T* first;     // Points to the beginning of the current block
+        T* last;      // Points to the end of the current block (exclusive)
+        map_pointer node; // Points to the block map itself
 
         static constexpr std::size_t buffer_size() 
         {
@@ -43,7 +44,7 @@ namespace mystl
 
         DequeIterator(T* x, map_pointer y) noexcept : cur(x), first(*y), last(*y + buffer_size()), node(y) {}
 
-        // Конвертация из non-const в const итератор
+        // Conversion from non-const to const iterator
         template <typename NonConstRef, typename NonConstPtr>
         DequeIterator(const DequeIterator<T, NonConstRef, NonConstPtr>& other) noexcept
             : cur(other.cur)
@@ -66,7 +67,7 @@ namespace mystl
         Self& operator++() noexcept 
         {
             ++cur;
-            if (cur == last) // Достигли конца блока, прыгаем на следующий
+            if (cur == last) // Reached the end of the block, jump to the next one
             { 
                 set_node(node + 1);
                 cur = first;
@@ -83,7 +84,7 @@ namespace mystl
 
         Self& operator--() noexcept 
         {
-            if (cur == first) // Достигли начала блока, прыгаем на предыдущий
+            if (cur == first) // Reached the beginning of the block, jump to the previous one
             { 
                 set_node(node - 1);
                 cur = last;
@@ -104,12 +105,12 @@ namespace mystl
             difference_type offset = n + (cur - first);
             if (offset >= 0 && offset < static_cast<difference_type>(buffer_size())) 
             {
-                // Остаемся в том же блоке
+                // Stay in the same block
                 cur += n;
             } 
             else 
             {
-                // Прыгаем через блоки
+                // Jump across blocks
                 difference_type node_offset = offset > 0 
                     ? offset / static_cast<difference_type>(buffer_size())
                     : -static_cast<difference_type>((-offset - 1) / buffer_size()) - 1;
@@ -146,8 +147,9 @@ namespace mystl
     public:
         using value_type             = T;
         using allocator_type         = Allocator;
-        using size_type              = std::size_type;
-        using difference_type        = std::ptrdiff_t;
+        using allocator_traits_type  = std::allocator_traits<Allocator>;
+        using size_type              = typename allocator_traits_type::size_type;
+        using difference_type        = typename allocator_traits_type::difference_type;
         using reference              = T&;
         using const_reference        = const T&;
         using pointer                = T*;
@@ -162,18 +164,18 @@ namespace mystl
         using map_pointer = T**;
         using map_allocator_type = typename std::allocator_traits<Allocator>::template rebind_alloc<T*>;
 
-        iterator    start_;       // Итератор на первый элемент
-        iterator    finish_;      // Итератор на элемент, следующий за последним
+        iterator    start_;       // Iterator to the first element
+        iterator    finish_;      // Iterator to the element after the last one
         map_pointer map_ = nullptr;
         size_type   map_size_ = 0;
         
-        [[no_unique_address]] Allocator alloc_; // Оптимизация пустого аллокатора (C++20)
+        [[no_unique_address]] Allocator alloc_; // Empty allocator optimization (C++20)
 
         static constexpr size_type buffer_size() { return deque_buf_size(sizeof(T)); }
 
     public:
         // ========================================================================
-        // ЖИЗНЕННЫЙ ЦИКЛ (Constructors / Destructor)
+        // LIFE CYCLE (Constructors / Destructor)
         // ========================================================================
         
         Deque() { initialize_map(0); }
@@ -296,7 +298,7 @@ namespace mystl
         }
 
         // ========================================================================
-        // ЭЛЕМЕНТЫ ДОСТУПА И ИТЕРАТОРЫ
+        // ELEMENT ACCESS AND ITERATORS
         // ========================================================================
         
         [[nodiscard]] iterator begin() noexcept { return start_; }
@@ -328,11 +330,11 @@ namespace mystl
         [[nodiscard]] reference back() noexcept { assert(!empty()); iterator tmp = finish_; --tmp; return *tmp; }
         [[nodiscard]] const_reference back() const noexcept { assert(!empty()); const_iterator tmp = finish_; --tmp; return *tmp; }
 
-        [[nodiscard]] size_type size() const noexcept { return finish_ - start_; }
-        [[nodiscard]] bool empty() const noexcept { return finish_ == start_; }
+        [[nodiscard]] size_type size() const noexcept { return map_ == nullptr ? 0 : finish_ - start_; }
+        [[nodiscard]] bool empty() const noexcept { return map_ == nullptr || finish_ == start_; }
 
         // ========================================================================
-        // МОДИФИКАТОРЫ (Push / Pop / Emplace)
+        // MODIFIERS (Push / Pop / Emplace)
         // ========================================================================
         
         void push_back(const T& value) 
@@ -398,7 +400,7 @@ namespace mystl
             {
                 --finish_;
                 std::allocator_traits<Allocator>::destroy(alloc_, finish_.cur);
-                deallocate_block(finish_.last); 
+                deallocate_block(*(finish_.node + 1)); 
             }
         }
 
@@ -443,7 +445,7 @@ namespace mystl
 
     private:
         // ========================================================================
-        // СЛУЖЕБНЫЕ МЕТОДЫ УПРАВЛЕНИЯ ПАМЯТЬЮ
+        // MEMORY MANAGEMENT HELPERS
         // ========================================================================
         
         void initialize_map(size_type num_elements) 
@@ -454,7 +456,7 @@ namespace mystl
             map_allocator_type map_alloc(alloc_);
             map_ = std::allocator_traits<map_allocator_type>::allocate(map_alloc, map_size_);
             
-            // Размещаем рабочий диапазон блоков строго по центру карты
+            // Place the working range of blocks strictly in the center of the map
             map_pointer nstart = map_ + (map_size_ - num_nodes) / 2;
             map_pointer nfinish = nstart + num_nodes - 1;
             

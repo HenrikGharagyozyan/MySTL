@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstddef> // Для std::size_t
+#include <cstddef> // For std::size_t
 
 namespace mystl
 {
@@ -35,14 +35,14 @@ namespace mystl
     template <typename T> 
     using remove_cv_t = typename remove_cv<T>::type;
 
-    // Скрытые детали реализации decay
+    // Hidden implementation details of decay
     namespace detail 
     {
         template <typename T> struct decay_impl { using type = remove_cv_t<T>; };
-        // Распад массивов в указатели
+        // Array decay to pointers
         template <typename T, std::size_t N> struct decay_impl<T[N]> { using type = T*; };
         template <typename T> struct decay_impl<T[]> { using type = T*; };
-        // Распад функций в указатели на функции
+        // Function decay to function pointers
         template <typename R, typename... Args> struct decay_impl<R(Args...)> { using type = R(*)(Args...); };
     }
 
@@ -140,7 +140,7 @@ namespace mystl
         }
     };
 
-    // make_pair теперь использует decay_t
+    // make_pair now uses decay_t
     template <typename T1, typename T2>
     constexpr Pair<decay_t<T1>, decay_t<T2>> make_pair(T1&& x, T2&& y)
     {
@@ -148,7 +148,7 @@ namespace mystl
             mystl::forward<T1>(x), mystl::forward<T2>(y));
     }
 
-    // Операторы сравнения
+    // Comparison operators
     template <typename T1, typename T2>
     constexpr bool operator==(const Pair<T1, T2>& lhs, const Pair<T1, T2>& rhs) 
     { 
