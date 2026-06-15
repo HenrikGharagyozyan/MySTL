@@ -308,6 +308,28 @@ namespace mystl
             return *this;
         }
 
+        template<typename InputIt>
+        Vector(InputIt first, InputIt last)
+            : size_(std::distance(first, last))
+            , capacity_(size_ * 2)
+        {
+            data_ = capacity_ > 0 ? alloc_.allocate(capacity_) : nullptr;
+            size_type i = 0;
+            try
+            {                
+                for (; first != last; ++first, ++i)
+                    alloc_.construct(data_ + i, *first);
+            }
+            catch (...)
+            {
+                for (size_type j = 0; j < i; ++j)
+                    alloc_.destroy(data_ + j);  
+                if (data_)
+                    alloc_.deallocate(data_, capacity_);
+                throw;
+            }
+        }
+
         Vector& operator=(Vector& other) noexcept
         {
             if (this != &other)
