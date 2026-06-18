@@ -180,22 +180,26 @@ namespace mystl
         
         Deque() { initialize_map(0); }
 
+        explicit Deque(const Allocator& alloc)
+            : alloc_(alloc)
+        {
+            initialize_map(0);
+        }
+
         explicit Deque(size_type count, const T& value = T(), const Allocator& alloc = Allocator())
             : alloc_(alloc) 
         {
-            initialize_map(count);
-            create_nodes(start_.node, finish_.node);
+            initialize_map(0);
             try 
             {
-                for (iterator it = start_; it != finish_; ++it) 
+                for (size_type i = 0; i < count; ++i)
                 {
-                    std::allocator_traits<Allocator>::construct(alloc_, it.cur, value);
+                    push_back(value);
                 }
             } 
             catch (...) 
             {
-                clear();
-                destroy_map();
+                release_storage();
                 throw;
             }
         }
@@ -203,21 +207,17 @@ namespace mystl
         Deque(std::initializer_list<T> init, const Allocator& alloc = Allocator())
             : alloc_(alloc) 
         {
-            initialize_map(init.size());
-            create_nodes(start_.node, finish_.node);
+            initialize_map(0);
             try 
             {
-                iterator current = start_;
                 for (const auto& item : init) 
                 {
-                    std::allocator_traits<Allocator>::construct(alloc_, current.cur, item);
-                    ++current;
+                    push_back(item);
                 }
             } 
             catch (...) 
             {
-                clear();
-                destroy_map();
+                release_storage();
                 throw;
             }
         }
@@ -225,9 +225,37 @@ namespace mystl
         Deque(const Deque& other) 
             : alloc_(std::allocator_traits<Allocator>::select_on_container_copy_construction(other.alloc_)) 
         {
-            initialize_map(other.size());
-            create_nodes(start_.node, finish_.node);
-            std::uninitialized_copy(other.begin(), other.end(), start_);
+            initialize_map(0);
+            try
+            {
+                for (const auto& value : other)
+                {
+                    push_back(value);
+                }
+            }
+            catch (...)
+            {
+                release_storage();
+                throw;
+            }
+        }
+
+        Deque(const Deque& other, const Allocator& alloc)
+            : alloc_(alloc)
+        {
+            initialize_map(0);
+            try
+            {
+                for (const auto& value : other)
+                {
+                    push_back(value);
+                }
+            }
+            catch (...)
+            {
+                release_storage();
+                throw;
+            }
         }
 
         Deque(Deque&& other) noexcept
@@ -243,15 +271,60 @@ namespace mystl
             other.finish_ = iterator();
         }
 
+        Deque(Deque&& other, const Allocator& alloc)
+            : alloc_(alloc)
+        {
+            if (alloc_ == other.alloc_)
+            {
+                start_ = other.start_;
+                finish_ = other.finish_;
+                map_ = other.map_;
+                map_size_ = other.map_size_;
+
+                other.map_ = nullptr;
+                other.map_size_ = 0;
+                other.start_ = iterator();
+                other.finish_ = iterator();
+                return;
+            }
+
+            initialize_map(0);
+            try
+            {
+                for (auto& value : other)
+                {
+                    push_back(mystl::move(value));
+                }
+            }
+            catch (...)
+            {
+                release_storage();
+                throw;
+            }
+        }
+
+        template <typename InputIt>
+        Deque(InputIt first, InputIt last, const Allocator& alloc = Allocator())
+            : alloc_(alloc)
+        {
+            initialize_map(0);
+            try
+            {
+                for (; first != last; ++first)
+                {
+                    push_back(*first);
+                }
+            }
+            catch (...)
+            {
+                release_storage();
+                throw;
+            }
+        }
+
         ~Deque() 
         {
-            clear();
-            if (map_) 
-            {
-                deallocate_block(*start_.node);
-                map_allocator_type map_alloc(alloc_);
-                std::allocator_traits<map_allocator_type>::deallocate(map_alloc, map_, map_size_);
-            }
+            release_storage();
         }
 
         Deque& operator=(const Deque& other) 
@@ -282,8 +355,7 @@ namespace mystl
         {
             if (this != &other) 
             {
-                clear();
-                destroy_map();
+                release_storage();
                 map_ = other.map_;
                 map_size_ = other.map_size_;
                 start_ = other.start_;
@@ -332,6 +404,7 @@ namespace mystl
 
         [[nodiscard]] size_type size() const noexcept { return map_ == nullptr ? 0 : finish_ - start_; }
         [[nodiscard]] bool empty() const noexcept { return map_ == nullptr || finish_ == start_; }
+        [[nodiscard]] allocator_type get_allocator() const noexcept { return alloc_; }
 
         // ========================================================================
         // MODIFIERS (Push / Pop / Emplace)
@@ -514,6 +587,22 @@ namespace mystl
             std::allocator_traits<map_allocator_type>::deallocate(map_alloc, map_, map_size_);
             map_ = nullptr;
             map_size_ = 0;
+        }
+
+        void release_storage() noexcept
+        {
+            if (!map_)
+                return;
+
+            clear();
+            deallocate_block(*start_.node);
+            map_allocator_type map_alloc(alloc_);
+            std::allocator_traits<map_allocator_type>::deallocate(map_alloc, map_, map_size_);
+
+            map_ = nullptr;
+            map_size_ = 0;
+            start_ = iterator();
+            finish_ = iterator();
         }
 
         template <typename... Args>

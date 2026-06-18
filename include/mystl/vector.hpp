@@ -243,9 +243,24 @@ namespace mystl
         // ========================================================================
         Vector() noexcept = default;
 
+        explicit Vector(const allocator_type& alloc) noexcept
+            : alloc_(alloc)
+        {
+        }
+
         explicit Vector(size_type count)
             : size_(count)
             , capacity_(count * 2)
+        {
+            data_ = capacity_ > 0 ? alloc_.allocate(capacity_) : nullptr;
+            for (size_type i = 0; i < size_; ++i)
+                alloc_.construct(data_ + i);
+        }
+
+        Vector(size_type count, const allocator_type& alloc)
+            : size_(count)
+            , capacity_(count * 2)
+            , alloc_(alloc)
         {
             data_ = capacity_ > 0 ? alloc_.allocate(capacity_) : nullptr;
             for (size_type i = 0; i < size_; ++i)
@@ -261,9 +276,30 @@ namespace mystl
                 alloc_.construct(data_ + i, value);
         }
 
+        Vector(size_type count, const_reference value, const allocator_type& alloc)
+            : size_(count)
+            , capacity_(count * 2)
+            , alloc_(alloc)
+        {
+            data_ = capacity_ > 0 ? alloc_.allocate(capacity_) : nullptr;
+            for (size_type i = 0; i < size_; ++i)
+                alloc_.construct(data_ + i, value);
+        }
+
         Vector(std::initializer_list<T> init)
             : size_(init.size())
             , capacity_(init.size() * 2)
+        {
+            data_ = capacity_ > 0 ? alloc_.allocate(capacity_) : nullptr;
+            size_type i = 0;
+            for (const auto& value : init)
+                alloc_.construct(data_ + i++, value);
+        }
+
+        Vector(std::initializer_list<T> init, const allocator_type& alloc)
+            : size_(init.size())
+            , capacity_(init.size() * 2)
+            , alloc_(alloc)
         {
             data_ = capacity_ > 0 ? alloc_.allocate(capacity_) : nullptr;
             size_type i = 0;
@@ -287,6 +323,16 @@ namespace mystl
                 alloc_.construct(data_ + i, other.data_[i]);
         }
 
+        Vector(const Vector& other, const allocator_type& alloc)
+            : size_(other.size_)
+            , capacity_(other.capacity_)
+            , alloc_(alloc)
+        {
+            data_ = capacity_ > 0 ? alloc_.allocate(capacity_) : nullptr;
+            for (size_type i = 0; i < size_; ++i)
+                alloc_.construct(data_ + i, other.data_[i]);
+        }
+
         Vector(Vector&& other) noexcept
             : data_(other.data_)
             , size_(other.size_)
@@ -296,6 +342,39 @@ namespace mystl
             other.data_ = nullptr;
             other.size_ = 0;
             other.capacity_ = 0;
+        }
+
+        Vector(Vector&& other, const allocator_type& alloc)
+            : alloc_(alloc)
+        {
+            if (alloc_ == other.alloc_)
+            {
+                data_ = other.data_;
+                size_ = other.size_;
+                capacity_ = other.capacity_;
+                other.data_ = nullptr;
+                other.size_ = 0;
+                other.capacity_ = 0;
+                return;
+            }
+
+            size_ = other.size_;
+            capacity_ = other.capacity_;
+            data_ = capacity_ > 0 ? alloc_.allocate(capacity_) : nullptr;
+            size_type i = 0;
+            try
+            {
+                for (; i < size_; ++i)
+                    alloc_.construct(data_ + i, mystl::move(other.data_[i]));
+            }
+            catch (...)
+            {
+                for (size_type j = 0; j < i; ++j)
+                    alloc_.destroy(data_ + j);
+                if (data_)
+                    alloc_.deallocate(data_, capacity_);
+                throw;
+            }
         }
 
         Vector& operator=(const Vector& other)
@@ -324,6 +403,29 @@ namespace mystl
             {
                 for (size_type j = 0; j < i; ++j)
                     alloc_.destroy(data_ + j);  
+                if (data_)
+                    alloc_.deallocate(data_, capacity_);
+                throw;
+            }
+        }
+
+        template<typename InputIt>
+        Vector(InputIt first, InputIt last, const allocator_type& alloc)
+            : size_(std::distance(first, last))
+            , capacity_(size_ * 2)
+            , alloc_(alloc)
+        {
+            data_ = capacity_ > 0 ? alloc_.allocate(capacity_) : nullptr;
+            size_type i = 0;
+            try
+            {
+                for (; first != last; ++first, ++i)
+                    alloc_.construct(data_ + i, *first);
+            }
+            catch (...)
+            {
+                for (size_type j = 0; j < i; ++j)
+                    alloc_.destroy(data_ + j);
                 if (data_)
                     alloc_.deallocate(data_, capacity_);
                 throw;
@@ -366,6 +468,7 @@ namespace mystl
         size_type size() const noexcept { return size_; }
         size_type capacity() const noexcept { return capacity_; }
         bool empty() const noexcept { return size_ == 0; }
+        allocator_type get_allocator() const noexcept { return alloc_; }
 
         reference operator[](size_type index) { return data_[index]; }
         const_reference operator[](size_type index) const { return data_[index]; }

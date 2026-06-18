@@ -1,7 +1,10 @@
 #pragma once
 
 #include "deque.hpp"
-#include <utility>
+#include "utility.hpp"
+
+#include <memory>
+#include <type_traits>
 
 namespace mystl 
 {
@@ -18,14 +21,23 @@ namespace mystl
         using size_type       = typename Container::size_type;
         using reference       = typename Container::reference;
         using const_reference = typename Container::const_reference;
+        using allocator_type  = typename Container::allocator_type;
+
+        static_assert(std::is_same<T, value_type>::value,
+                      "Queue<T, Container>: Container::value_type must be T");
 
         // ========================================================================
         // CONSTRUCTORS
         // ========================================================================
         
         Queue() : c_() {}
+        explicit Queue(const allocator_type& alloc) : c_(alloc) {}
         explicit Queue(const Container& cont) : c_(cont) {}
         explicit Queue(Container&& cont) : c_(mystl::move(cont)) {}
+        Queue(const Container& cont, const allocator_type& alloc) : c_(cont, alloc) {}
+        Queue(Container&& cont, const allocator_type& alloc) : c_(mystl::move(cont), alloc) {}
+        Queue(const Queue& other, const allocator_type& alloc) : c_(other.c_, alloc) {}
+        Queue(Queue&& other, const allocator_type& alloc) : c_(mystl::move(other.c_), alloc) {}
 
         // ========================================================================
         // ELEMENT ACCESS
@@ -43,6 +55,7 @@ namespace mystl
         
         [[nodiscard]] bool empty() const { return c_.empty(); }
         [[nodiscard]] size_type size() const { return c_.size(); }
+        [[nodiscard]] allocator_type get_allocator() const noexcept { return c_.get_allocator(); }
 
         // ========================================================================
         // MODIFIERS
@@ -77,3 +90,12 @@ namespace mystl
     };
 
 } // namespace mystl
+
+namespace std
+{
+    template <typename T, typename Container, typename Alloc>
+    struct uses_allocator<mystl::Queue<T, Container>, Alloc>
+        : uses_allocator<Container, Alloc>
+    {
+    };
+}

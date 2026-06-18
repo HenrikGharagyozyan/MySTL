@@ -3,6 +3,9 @@
 #include "deque.hpp"
 #include "utility.hpp"
 
+#include <memory>
+#include <type_traits>
+
 namespace mystl 
 {
     // By default, use mystl::Deque, but allow another container to be passed (for example, Vector or List)
@@ -15,6 +18,10 @@ namespace mystl
         using size_type       = typename Container::size_type;
         using reference       = typename Container::reference;
         using const_reference = typename Container::const_reference;
+        using allocator_type  = typename Container::allocator_type;
+
+        static_assert(std::is_same<T, value_type>::value,
+                      "Stack<T, Container>: Container::value_type must be T");
 
     protected:
         Container c; // Underlying container
@@ -22,8 +29,13 @@ namespace mystl
     public:
         // Constructors
         Stack() : c() {}
+        explicit Stack(const allocator_type& alloc) : c(alloc) {}
         explicit Stack(const Container& cont) : c(cont) {}
         explicit Stack(Container&& cont) : c(mystl::move(cont)) {}
+        Stack(const Container& cont, const allocator_type& alloc) : c(cont, alloc) {}
+        Stack(Container&& cont, const allocator_type& alloc) : c(mystl::move(cont), alloc) {}
+        Stack(const Stack& other, const allocator_type& alloc) : c(other.c, alloc) {}
+        Stack(Stack&& other, const allocator_type& alloc) : c(mystl::move(other.c), alloc) {}
         
         Stack(const Stack& other) = default;
         Stack(Stack&& other) noexcept = default;
@@ -34,6 +46,7 @@ namespace mystl
         // Element access
         [[nodiscard]] bool empty() const { return c.empty(); }
         [[nodiscard]] size_type size() const { return c.size(); }
+        [[nodiscard]] allocator_type get_allocator() const noexcept { return c.get_allocator(); }
 
         reference top() { return c.back(); }
         const_reference top() const { return c.back(); }
@@ -64,3 +77,12 @@ namespace mystl
     }
 
 } // namespace mystl
+
+namespace std
+{
+    template <typename T, typename Container, typename Alloc>
+    struct uses_allocator<mystl::Stack<T, Container>, Alloc>
+        : uses_allocator<Container, Alloc>
+    {
+    };
+}
