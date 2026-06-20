@@ -26,7 +26,7 @@ namespace mystl
     template <typename Pair>
     struct Select1st 
     {
-        const typename Pair::first_type& operator()(const Pair& x) const { return x.first; }
+        constexpr const auto& operator()(const Pair& p) const noexcept { return p.first; }
     };
 
     enum class RBColor : bool 
@@ -325,7 +325,7 @@ namespace mystl
         
         
         template <typename... Args>
-        std::pair<iterator, bool> emplace_unique(Args&&... args) 
+        mystl::Pair<iterator, bool> emplace_unique(Args&&... args) 
         {
             // Create a node immediately to extract the key from it
             Node* z = create_node(nullptr, nil_, nil_, RBColor::Red, mystl::forward<Args>(args)...);

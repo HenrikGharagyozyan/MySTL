@@ -61,3 +61,7 @@ gtest_discover_tests(test_unordered_multimap)
 add_executable(test_set test_set.cpp)
 target_link_libraries(test_set PRIVATE mystl GTest::gtest_main)
 gtest_discover_tests(test_set)
+
+add_executable(test_map test_map.cpp)
+target_link_libraries(test_map PRIVATE mystl GTest::gtest_main)
+gtest_discover_tests(test_map)
