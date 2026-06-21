@@ -222,25 +222,6 @@ namespace mystl
         return d_first;
     }
 
-    // Default comparator
-    template <typename T>
-    struct less 
-    {
-        constexpr bool operator()(const T& lhs, const T& rhs) const 
-        {
-            return lhs < rhs;
-        }
-    };
-
-    template <typename T>
-    struct greater
-    {
-        constexpr bool operator()(const T& lhs, const T& rhs) const 
-        {
-            return lhs > rhs;
-        }
-    };
-
     // Helper function for sift-down (O(log N))
     template <typename RandomIt, typename Distance, typename Compare>
     void sift_down(RandomIt first, Distance len, Distance start, Compare comp) 
