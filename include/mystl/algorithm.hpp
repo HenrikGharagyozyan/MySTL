@@ -3,7 +3,7 @@
 #include "utility.hpp"
 #include "iterator.hpp"
 #include <cstddef>
-#include <cstring> // Для std::memmove
+#include <cstring> // For std::memmove
 
 namespace mystl 
 {

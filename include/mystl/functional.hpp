@@ -8,7 +8,7 @@
 namespace mystl
 {
     // ========================================================================
-    // 1. АРИФМЕТИЧЕСКИЕ ОПЕРАЦИИ (ПРОЗРАЧНЫЕ)
+    // 1. ARITHMETIC OPERATIONS (TRANSPARENT)
     // ========================================================================
 
     struct plus 
@@ -42,7 +42,7 @@ namespace mystl
     };
 
     // ========================================================================
-    // 2. ОПЕРАЦИИ СРАВНЕНИЯ (TRANSPARENT COMPARATORS)
+    // 2. COMPARISON OPERATIONS (TRANSPARENT COMPARATORS)
     // ========================================================================
 
     struct equal_to 
@@ -83,7 +83,7 @@ namespace mystl
 
     struct less 
     {
-        using is_transparent = int; // Флаг для умного поиска в Map/Set (без аллокаций)
+        using is_transparent = int; // Flag for smart searching in Map/Set (without allocations)
 
         template <typename T, typename U>
         constexpr auto operator()(T&& lhs, U&& rhs) const
@@ -119,7 +119,7 @@ namespace mystl
 
     // ========================================================================
     // 3. REFERENCE WRAPPER
-    // Обертка, позволяющая хранить ссылки в контейнерах или передавать их по значению
+    // Wrapper that allows storing references in containers or passing them by value
     // ========================================================================
 
     template <typename T>
@@ -132,7 +132,7 @@ namespace mystl
         using type = T;
 
         reference_wrapper(T& ref) noexcept : ptr_(&ref) {}
-        reference_wrapper(T&&) = delete; // Запрещаем биндить временные объекты!
+        reference_wrapper(T&&) = delete; // Prohibit binding temporary objects!
 
         reference_wrapper(const reference_wrapper& other) noexcept = default;
         reference_wrapper& operator=(const reference_wrapper& other) noexcept = default;

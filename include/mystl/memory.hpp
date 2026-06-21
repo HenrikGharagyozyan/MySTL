@@ -1,0 +1,161 @@
+#pragma once
+
+#include "utility.hpp"
+#include "iterator.hpp"
+
+#include <cstddef>
+#include <new>
+#include <type_traits>
+
+namespace mystl 
+{
+    //
+    // Safe getting of object address (bypasses overloaded operator&)
+    template <typename T>
+    constexpr T* addressof(T& arg) noexcept 
+    {
+        return __builtin_addressof(arg);
+    }
+
+    template <typename T, typename... Args>
+    constexpr T* construct_at(T* p, Args&&... args) 
+    {
+        return ::new (const_cast<void*>(static_cast<const volatile void*>(p))) T(mystl::forward<Args>(args)...);
+    }
+
+    template <typename T>
+    constexpr void destroy_at(T* p) 
+    {
+        if constexpr (!std::is_trivially_destructible_v<T>) 
+        {
+            p->~T();
+        }
+    }
+
+    template <typename ForwardIt>
+    constexpr void destroy(ForwardIt first, ForwardIt last) 
+    {
+        for (; first != last; ++first) 
+        {
+            mystl::destroy_at(mystl::addressof(*first));
+        }
+    }
+
+    //
+    namespace detail 
+    {
+        // RAII Guard: If an exception is thrown during array object construction,
+        // this guard will automatically delete already created objects, preventing a leak.
+        template <typename T>
+        struct destroy_guard 
+        {
+            T* first;
+            T* current;
+
+            constexpr ~destroy_guard() 
+            {
+                if (first != current) 
+                {
+                    mystl::destroy(first, current);
+                }
+            }
+            
+            constexpr void release() noexcept 
+            {
+                first = current; // Cancel deletion (everything succeeded)
+            }
+        };
+    }
+
+    //
+    template <typename ForwardIt, typename T>
+    void uninitialized_fill(ForwardIt first, ForwardIt last, const T& value) 
+    {
+        using ValueType = typename mystl::iterator_traits<ForwardIt>::value_type;
+        detail::destroy_guard<ValueType> guard{mystl::addressof(*first), mystl::addressof(*first)};
+        
+        for (; first != last; ++first) 
+        {
+            mystl::construct_at(mystl::addressof(*first), value);
+            ++guard.current;
+        }
+        guard.release();
+    }
+
+    template <typename InputIt, typename ForwardIt>
+    ForwardIt uninitialized_copy(InputIt first, InputIt last, ForwardIt d_first) 
+    {
+        using ValueType = typename mystl::iterator_traits<ForwardIt>::value_type;
+        detail::destroy_guard<ValueType> guard{mystl::addressof(*d_first), mystl::addressof(*d_first)};
+        
+        for (; first != last; ++first, (void)++d_first) 
+        {
+            mystl::construct_at(mystl::addressof(*d_first), *first);
+            ++guard.current;
+        }
+        guard.release();
+        return d_first;
+    }
+
+    template <typename InputIt, typename ForwardIt>
+    ForwardIt uninitialized_move(InputIt first, InputIt last, ForwardIt d_first) 
+    {
+        using ValueType = typename mystl::iterator_traits<ForwardIt>::value_type;
+        detail::destroy_guard<ValueType> guard{mystl::addressof(*d_first), mystl::addressof(*d_first)};
+        
+        for (; first != last; ++first, (void)++d_first) 
+        {
+            mystl::construct_at(mystl::addressof(*d_first), mystl::move(*first));
+            ++guard.current;
+        }
+        guard.release();
+        return d_first;
+    }
+
+    //
+    // A layer that standardizes work with any allocators
+    template <typename Alloc>
+    struct allocator_traits 
+    {
+        using allocator_type = Alloc;
+        using value_type     = typename Alloc::value_type;
+        using pointer        = value_type*;
+        using size_type      = std::size_t;
+
+        // Allows containers to "rebind" the allocator for memory allocation for nodes (e.g., for tree nodes)
+        template <typename T>
+        using rebind_alloc = typename Alloc::template rebind<T>::other;
+
+        template <typename T>
+        using rebind_traits = allocator_traits<rebind_alloc<T>>;
+
+        [[nodiscard]] static pointer allocate(Alloc& a, size_type n) 
+        {
+            return a.allocate(n);
+        }
+
+        static void deallocate(Alloc& a, pointer p, size_type n) 
+        {
+            a.deallocate(p, n);
+        }
+
+        // We handle construction ourselves (allocator now only allocates memory)
+        template <typename T, typename... Args>
+        static void construct(Alloc&, T* p, Args&&... args) 
+        {
+            mystl::construct_at(p, mystl::forward<Args>(args)...);
+        }
+
+        template <typename T>
+        static void destroy(Alloc&, T* p) 
+        {
+            mystl::destroy_at(p);
+        }
+
+        static Alloc select_on_container_copy_construction(const Alloc& rhs) 
+        {
+            return rhs; // In a simple implementation, allocators are simply copied
+        }
+    };
+
+} // namespace mystl
