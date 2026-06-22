@@ -5,11 +5,21 @@
 
 #include <cstddef>
 #include <new>
-#include <type_traits>
+
 
 namespace mystl 
 {
-    //
+
+    // ========================================================================
+    // TYPE TRAITS FOR MEMORY (Using compiler intrinsics directly for simplicity)
+    // ========================================================================
+    template <typename T>
+    inline constexpr bool is_trivially_destructible_v = __has_trivial_destructor(T);
+
+    // ========================================================================
+    // ADDRESSOF & LIFECYCLE MANAGEMENT
+    // ========================================================================
+    
     // Safe getting of object address (bypasses overloaded operator&)
     template <typename T>
     constexpr T* addressof(T& arg) noexcept 
@@ -26,7 +36,7 @@ namespace mystl
     template <typename T>
     constexpr void destroy_at(T* p) 
     {
-        if constexpr (!std::is_trivially_destructible_v<T>) 
+        if constexpr (!mystl::is_trivially_destructible_v<T>) 
         {
             p->~T();
         }
@@ -65,6 +75,7 @@ namespace mystl
                 first = current; // Cancel deletion (everything succeeded)
             }
         };
+
     }
 
     //

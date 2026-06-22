@@ -173,12 +173,12 @@ namespace mystl
     void cref(const T&&) = delete;
 
     // ========================================================================
-    // 4. HASH FRAMEWORK (Основа для Unordered контейнеров)
+    // 4. HASH FRAMEWORK (Foundation for Unordered containers)
     // ========================================================================
 
     namespace detail 
     {
-        // алгоритм хеширования FNV-1a
+        // FNV-1a hashing algorithm
         inline constexpr std::size_t fnv1a_32(const char* s, std::size_t count) noexcept 
         {
             std::size_t hash = 2166136261u;
@@ -210,11 +210,11 @@ namespace mystl
         }
     } // namespace detail
 
-    // Базовый шаблон (вызывает ошибку компиляции для нехешируемых типов)
+    // Base template (raises compilation error for non-hashable types)
     template <typename T>
     struct hash;
 
-    // Макрос для быстрой генерации Identity-хешей для целочисленных типов
+    // Macro for fast generation of identity hashes for integer types
     #define MYSTL_GENERATE_INT_HASH(Type) \
         template <> struct hash<Type> { \
             constexpr std::size_t operator()(Type v) const noexcept { \
@@ -237,7 +237,7 @@ namespace mystl
 
     #undef MYSTL_GENERATE_INT_HASH
 
-    // Специализация для чисел с плавающей точкой
+    // Specialization for floating-point numbers
     template <>
     struct hash<float> 
     {
@@ -256,7 +256,7 @@ namespace mystl
         }
     };
 
-    // Специализация для указателей
+    // Specialization for pointers
     template <typename T>
     struct hash<T*> 
     {

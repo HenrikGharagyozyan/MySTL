@@ -100,15 +100,15 @@ namespace mystl
     template <typename T>
     using remove_pointer_t = typename remove_pointer<T>::type;
 
-    // Алиас для remove_const_t (в твоем коде есть struct remove_const, но нет _t)
+    // Alias for remove_const_t (your code has struct remove_const, but no _t)
     template <typename T>
     using remove_const_t = typename remove_const<T>::type;
 
     // ========================================================================
-    // COMPILER INTRINSICS (Для безопасного memmove)
+    // COMPILER INTRINSICS (For safe memmove)
     // ========================================================================
     
-    // Используем встроенные функции компилятора (GCC/Clang/MSVC) для проверки тривиальности
+    // We use compiler built-in functions (GCC/Clang/MSVC) to check triviality
     template <typename T>
     inline constexpr bool is_trivially_copy_assignable_v = __is_trivially_assignable(T&, const T&);
 
