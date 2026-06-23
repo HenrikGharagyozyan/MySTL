@@ -11,10 +11,14 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 endif()
 
-add_library(mystl STATIC src/string.cpp)
-target_include_directories(mystl PUBLIC 
+# Header-only library target
+add_library(mystl INTERFACE)
+
+target_include_directories(mystl INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
+
+target_compile_features(mystl INTERFACE cxx_std_20)
 
 # Integrate GoogleTest for unit testing
 include(FetchContent)

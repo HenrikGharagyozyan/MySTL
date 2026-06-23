@@ -10,9 +10,9 @@ add_executable(test_vector test_vector.cpp)
 target_link_libraries(test_vector PRIVATE mystl GTest::gtest_main)
 gtest_discover_tests(test_vector)
 
-# add_executable(test_string test_string.cpp)
-# target_link_libraries(test_string PRIVATE mystl GTest::gtest_main)
-# gtest_discover_tests(test_string)
+add_executable(test_string test_string.cpp)
+target_link_libraries(test_string PRIVATE mystl GTest::gtest_main)
+gtest_discover_tests(test_string)
 
 # add_executable(test_list test_list.cpp)
 # target_link_libraries(test_list PRIVATE mystl GTest::gtest_main)
