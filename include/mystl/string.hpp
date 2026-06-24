@@ -26,7 +26,7 @@ namespace mystl
         using const_pointer          = const value_type*;
 
         // ========================================================================
-        // ИТЕРАТОРЫ (Сырые указатели - самые быстрые Random Access итераторы)
+        // ITERATORS (Raw pointers are the fastest random access iterators)
         // ========================================================================
         using iterator               = pointer;
         using const_iterator         = const_pointer;
@@ -62,7 +62,7 @@ namespace mystl
 
     public:
         // ========================================================================
-        // ИТЕРАТОРЫ
+        // ITERATORS
         // ========================================================================
         iterator begin() noexcept { return data_ptr(); }
         iterator end() noexcept { return data_ptr() + size_; }
@@ -77,7 +77,7 @@ namespace mystl
         const_reverse_iterator crend() const noexcept { return const_reverse_iterator(cbegin()); }
 
         // ========================================================================
-        // КОНСТРУКТОРЫ И RULE OF FIVE
+        // CONSTRUCTORS AND RULE OF FIVE
         // ========================================================================
         String() noexcept
             : size_(0)
@@ -150,7 +150,7 @@ namespace mystl
                 heap_data_ = other.heap_data_;
             }
 
-            // Переводим исходный объект в дефолтное состояние SSO
+            // Reset the source object to the default SSO state
             other.size_ = 0;
             other.capacity_ = SSO_CAPACITY;
             other.sso_data_[0] = '\0';
@@ -219,7 +219,7 @@ namespace mystl
         }
 
         // ========================================================================
-        // ДОСТУП К ДАННЫМ
+        // DATA ACCESS
         // ========================================================================
         [[nodiscard]] const char* c_str() const noexcept { return data_ptr(); }
         [[nodiscard]] size_type size() const noexcept { return size_; }
@@ -230,7 +230,7 @@ namespace mystl
         const_reference operator[](size_type i) const noexcept { return data_ptr()[i]; }
 
         // ========================================================================
-        // МОДИФИКАТОРЫ
+        // MODIFIERS
         // ========================================================================
         void clear() noexcept
         {
@@ -286,7 +286,7 @@ namespace mystl
         }
 
         // ========================================================================
-        // ДРУЖЕСТВЕННЫЕ ФУНКЦИИ (СРАВНЕНИЯ И IO)
+        // FRIEND FUNCTIONS (COMPARISONS AND IO)
         // ========================================================================
         friend bool operator==(const String& lhs, const String& rhs) noexcept
         {

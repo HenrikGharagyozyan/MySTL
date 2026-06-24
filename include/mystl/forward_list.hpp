@@ -1,126 +1,123 @@
 #pragma once
 
-#include <cstddef>
-#include <iterator>
-#include <stdexcept>
-#include <initializer_list>
-#include <memory>
-#include "allocator.hpp"
 #include "utility.hpp"
+#include "iterator.hpp"
+#include "memory.hpp"
+#include "allocator.hpp"
+#include "algorithm.hpp"
+
+#include <cstddef>
+#include <initializer_list>
 
 namespace mystl 
 {
-
-    template <typename T, typename Allocator = mystl::Allocator<T>>
-    class ForwardList 
+    namespace detail 
     {
-    private:
-        // Base node: stores only a pointer (solves the dummy-node problem)
-        struct NodeBase 
+        // Helper structures are moved to detail to avoid depending on iterator constness
+        struct ForwardListNodeBase 
         {
-            NodeBase* next;
-            NodeBase() noexcept 
-                : next(nullptr) 
-            {
-            }
+            ForwardListNodeBase* next;
+            ForwardListNodeBase() noexcept : next(nullptr) {} 
         };
 
-        // Node with data
-        struct Node : public NodeBase 
+        template <typename T>
+        struct ForwardListNode : public ForwardListNodeBase 
         {
             T data;
-            template<typename... Args>
-            explicit Node(Args&&... args) 
+            
+            template <typename... Args>
+            explicit ForwardListNode(Args&&... args) 
                 : data(mystl::forward<Args>(args)...) 
             {
             }
         };
+    }
 
-        NodeBase head_; // Dummy node (before_begin). head_.next is the first real element.
+    // ========================================================================
+    // SINGLE TEMPLATE ITERATOR (SINGLY LINKED)
+    // ========================================================================
+    template <typename Value, typename Pointer, typename Reference>
+    class ForwardListIterator 
+    {
+    public:
+        using iterator_category = mystl::forward_iterator_tag;
+        using value_type        = Value;
+        using difference_type   = std::ptrdiff_t;
+        using pointer           = Pointer;
+        using reference         = Reference;
 
-        using allocator_traits = std::allocator_traits<Allocator>;
-        using node_allocator_type = typename allocator_traits::template rebind_alloc<Node>;
-        node_allocator_type alloc_;
+        using NodeBase = detail::ForwardListNodeBase;
+        using Node     = detail::ForwardListNode<Value>;
+
+        NodeBase* node_ = nullptr;
+
+        ForwardListIterator() noexcept : node_(nullptr) {}
+        explicit ForwardListIterator(NodeBase* ptr) noexcept : node_(ptr) {}
+
+        // Conversion constructor from mutable iterator to const iterator
+        template <typename P, typename R>
+        ForwardListIterator(const ForwardListIterator<Value, P, R>& other) noexcept : node_(other.node_) {}
+
+        reference operator*() const noexcept 
+        { 
+            return static_cast<Node*>(node_)->data; 
+        }
+
+        pointer operator->() const noexcept 
+        { 
+            return mystl::addressof(static_cast<Node*>(node_)->data); 
+        }
+
+        ForwardListIterator& operator++() noexcept 
+        { 
+            node_ = node_->next; 
+            return *this; 
+        }
+
+        ForwardListIterator operator++(int) noexcept 
+        { 
+            ForwardListIterator tmp = *this; 
+            ++(*this); 
+            return tmp; 
+        }
+
+        bool operator==(const ForwardListIterator& rhs) const noexcept { return node_ == rhs.node_; }
+        bool operator!=(const ForwardListIterator& rhs) const noexcept { return node_ != rhs.node_; }
+    };
+
+    // ========================================================================
+    // SINGLY LINKED LIST (FORWARD_LIST)
+    // ========================================================================
+    template <typename T, typename Allocator = mystl::Allocator<T>>
+    class ForwardList 
+    {
+    private:
+        using NodeBase = detail::ForwardListNodeBase;
+        using Node     = detail::ForwardListNode<T>;
+
+        // mutable allows taking a non-const pointer &head_ in const methods (cbefore_begin/cend)
+        mutable NodeBase head_; 
+        
+        using node_allocator_type = typename Allocator::template rebind<Node>::other;
+        using node_traits         = mystl::allocator_traits<node_allocator_type>;
+        
+        [[no_unique_address]] node_allocator_type alloc_;
 
     public:
-        using value_type = T;
-        using allocator_type = Allocator;
-        using size_type = std::size_t;
-        using reference = T&;
-        using const_reference = const T&;
-        using pointer = T*;
-        using const_pointer = const T*;
+        using value_type             = T;
+        using allocator_type         = Allocator;
+        using size_type              = std::size_t;
+        using difference_type        = std::ptrdiff_t;
+        using reference              = T&;
+        using const_reference        = const T&;
+        using pointer                = T*;
+        using const_pointer          = const T*;
+
+        using iterator               = ForwardListIterator<T, T*, T&>;
+        using const_iterator         = ForwardListIterator<T, const T*, const T&>;
 
         // ========================================================================
-        // ITERATORS (Forward Only)
-        // ========================================================================
-        class ConstIterator;
-
-        class Iterator 
-        {
-        public:
-            using iterator_category = std::forward_iterator_tag;
-            using value_type        = T;
-            using difference_type   = std::ptrdiff_t;
-            using pointer           = T*;
-            using reference         = T&;
-
-        private:
-            NodeBase* node_;
-            friend class ForwardList;
-            friend class ConstIterator;
-
-            explicit Iterator(NodeBase* ptr) noexcept : node_(ptr) {}
-
-        public:
-            Iterator() noexcept : node_(nullptr) {}
-
-            reference operator*() const noexcept { return static_cast<Node*>(node_)->data; }
-            pointer operator->() const noexcept { return &(static_cast<Node*>(node_)->data); }
-
-            Iterator& operator++() noexcept { node_ = node_->next; return *this; }
-            Iterator operator++(int) noexcept { Iterator tmp = *this; node_ = node_->next; return tmp; }
-
-            bool operator==(const Iterator& rhs) const noexcept { return node_ == rhs.node_; }
-            bool operator!=(const Iterator& rhs) const noexcept { return node_ != rhs.node_; }
-            bool operator==(const ConstIterator& rhs) const noexcept;
-        };
-
-        class ConstIterator 
-        {
-        private:
-            const NodeBase* node_;
-            friend class ForwardList;
-
-            explicit ConstIterator(const NodeBase* ptr) noexcept : node_(ptr) {}
-
-        public:
-            using iterator_category = std::forward_iterator_tag;
-            using value_type        = T;
-            using difference_type   = std::ptrdiff_t;
-            using pointer           = const T*;
-            using reference         = const T&;
-
-            ConstIterator() noexcept : node_(nullptr) {}
-            ConstIterator(const Iterator& other) noexcept : node_(other.node_) {}
-
-            const_reference operator*() const noexcept { return static_cast<const Node*>(node_)->data; }
-            const_pointer operator->() const noexcept { return &(static_cast<const Node*>(node_)->data); }
-
-            ConstIterator& operator++() noexcept { node_ = node_->next; return *this; }
-            ConstIterator operator++(int) noexcept { ConstIterator tmp = *this; node_ = node_->next; return tmp; }
-
-            bool operator==(const ConstIterator& rhs) const noexcept { return node_ == rhs.node_; }
-            bool operator!=(const ConstIterator& rhs) const noexcept { return node_ != rhs.node_; }
-        };
-
-        using iterator = Iterator;
-        using const_iterator = ConstIterator;
-        using reverse_iterator = std::reverse_iterator<iterator>;
-	    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-
-        // ========================================================================
-        // ACCESS METHODS
+        // DATA ACCESS & ITERATORS
         // ========================================================================
         iterator before_begin() noexcept { return iterator(&head_); }
         const_iterator before_begin() const noexcept { return const_iterator(&head_); }
@@ -133,13 +130,6 @@ namespace mystl
         const_iterator cbegin() const noexcept { return const_iterator(head_.next); }
         const_iterator cend() const noexcept { return const_iterator(nullptr); }
 
-        reverse_iterator rbegin() { return reverse_iterator(end()); }
-        reverse_iterator rend() { return reverse_iterator(begin()); }
-        const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
-        const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
-        const_reverse_iterator crbegin() const { return const_reverse_iterator(cend()); }
-        const_reverse_iterator crend() const { return const_reverse_iterator(cbegin()); }
-
         bool empty() const noexcept { return head_.next == nullptr; }
 
         reference front() { return *begin(); }
@@ -148,29 +138,111 @@ namespace mystl
         // ========================================================================
         // CONSTRUCTORS AND RULE OF FIVE
         // ========================================================================
-        ForwardList() noexcept = default;
-        ~ForwardList();
-        ForwardList(const ForwardList& other);
-        ForwardList(ForwardList&& other) noexcept;
-        ForwardList(std::initializer_list<value_type> init);
+        ForwardList() noexcept : head_() {}
 
-        ForwardList& operator=(const ForwardList& other);
-        ForwardList& operator=(ForwardList&& other) noexcept;
+        ~ForwardList() 
+        {
+            clear();
+        }
+
+        ForwardList(const ForwardList& other) : head_()
+        {
+            NodeBase* current = &head_;
+            for (const auto& value : other) 
+            {
+                current->next = create_node(value);
+                current = current->next;
+            }
+        }
+
+        ForwardList(ForwardList&& other) noexcept
+            : head_()
+            , alloc_(mystl::move(other.alloc_)) 
+        {
+            head_.next = other.head_.next;
+            other.head_.next = nullptr;
+        }
+
+        ForwardList(std::initializer_list<value_type> init) : head_()
+        {
+            NodeBase* current = &head_;
+            for (const auto& value : init) 
+            {
+                current->next = create_node(value);
+                current = current->next;
+            }
+        }
+
+        ForwardList& operator=(const ForwardList& other)
+        {
+            if (this != &other) 
+            {
+                ForwardList temp(other);
+                swap(temp);
+            }
+            return *this;
+        }
+
+        ForwardList& operator=(ForwardList&& other) noexcept
+        {
+            if (this != &other) 
+            {
+                clear();
+                alloc_ = mystl::move(other.alloc_);
+                head_.next = other.head_.next;
+                other.head_.next = nullptr;
+            }
+            return *this;
+        }
 
         // ========================================================================
         // MODIFIERS
         // ========================================================================
-        void swap(ForwardList& other) noexcept { mystl::swap(head_.next, other.head_.next); }
+        void swap(ForwardList& other) noexcept 
+        { 
+            mystl::swap(alloc_, other.alloc_);
+            mystl::swap(head_.next, other.head_.next); 
+        }
 
-        void clear() noexcept;
+        void clear() noexcept
+        {
+            NodeBase* current = head_.next;
+            while (current) 
+            {
+                NodeBase* next_node = current->next;
+                destroy_node(static_cast<Node*>(current));
+                current = next_node;
+            }
+            head_.next = nullptr;
+        }
 
         template <typename... Args>
-        iterator emplace_after(const_iterator pos, Args&&... args);
+        iterator emplace_after(const_iterator pos, Args&&... args)
+        {
+            Node* new_node = create_node(mystl::forward<Args>(args)...);
+            NodeBase* current = pos.node_;
+            
+            new_node->next = current->next;
+            current->next = new_node;
+            
+            return iterator(new_node);
+        }
 
         iterator insert_after(const_iterator pos, const T& value) { return emplace_after(pos, value); }
         iterator insert_after(const_iterator pos, T&& value) { return emplace_after(pos, mystl::move(value)); }
 
-        iterator erase_after(const_iterator pos);
+        iterator erase_after(const_iterator pos)
+        {
+            NodeBase* current = pos.node_;
+            NodeBase* node_to_erase = current->next;
+            
+            if (node_to_erase) 
+            {
+                current->next = node_to_erase->next;
+                destroy_node(static_cast<Node*>(node_to_erase));
+            }
+            return iterator(current->next);
+        }
 
         void push_front(const T& value) { insert_after(before_begin(), value); }
         void push_front(T&& value) { insert_after(before_begin(), mystl::move(value)); }
@@ -178,34 +250,151 @@ namespace mystl
         void pop_front() { erase_after(before_begin()); }
 
         // ========================================================================
-        // ALGORITHMS (Zero-Allocation Pointer Manipulation)
+        // LIST MANAGEMENT ALGORITHMS
         // ========================================================================
+        void reverse() noexcept
+        {
+            NodeBase* prev = nullptr;
+            NodeBase* current = head_.next;
+            
+            while (current) 
+            {
+                NodeBase* next_node = current->next;
+                current->next = prev;
+                prev = current;
+                current = next_node;
+            }
+            head_.next = prev;
+        }
 
-        // Reverse the list in O(N) time and O(1) extra memory
-        void reverse() noexcept;
+        void unique()
+        {
+            NodeBase* current = head_.next;
+            if (!current) 
+                return;
 
-        // Remove consecutive duplicates in O(N)
-        void unique();
+            while (current->next) 
+            {
+                Node* curr_node = static_cast<Node*>(current);
+                Node* next_node = static_cast<Node*>(current->next);
 
-        // Merge two sorted lists in O(N)
-        void merge(ForwardList& other) noexcept;
+                if (curr_node->data == next_node->data) 
+                {
+                    NodeBase* duplicate = current->next;
+                    current->next = duplicate->next;
+                    destroy_node(static_cast<Node*>(duplicate));
+                } 
+                else 
+                {
+                    current = current->next;
+                }
+            }
+        }
 
-        // Merge sort (bottom-up merge sort) in O(N log N)
-        void sort();
+        void merge(ForwardList& other) noexcept
+        {
+            if (this == &other) 
+                return;
+
+            NodeBase* a = head_.next;
+            NodeBase* b = other.head_.next;
+            NodeBase* tail = &head_;
+
+            while (a && b) 
+            {
+                if (static_cast<Node*>(b)->data < static_cast<Node*>(a)->data) 
+                {
+                    tail->next = b;
+                    b = b->next;
+                } 
+                else 
+                {
+                    tail->next = a;
+                    a = a->next;
+                }
+                tail = tail->next;
+            }
+            
+            tail->next = a ? a : b;
+            other.head_.next = nullptr;
+        }
+
+        void sort()
+        {
+            if (!head_.next || !head_.next->next) 
+                return;
+
+            size_type list_size = 1;
+            while (true) 
+            {
+                NodeBase* current = head_.next;
+                head_.next = nullptr;
+                NodeBase* tail = &head_;
+                size_type merges_done = 0;
+
+                while (current) 
+                {
+                    NodeBase* left = current;
+                    NodeBase* right = nullptr;
+                    size_type left_size = 0;
+                    size_type right_size = 0;
+
+                    for (size_type i = 0; i < list_size && current; ++i) 
+                    {
+                        ++left_size;
+                        current = current->next;
+                    }
+
+                    right = current;
+
+                    for (size_type i = 0; i < list_size && current; ++i) 
+                    {
+                        ++right_size;
+                        current = current->next;
+                    }
+
+                    while (left_size > 0 || right_size > 0) 
+                    {
+                        if (left_size == 0) 
+                        {
+                            tail->next = right; right = right->next; --right_size;
+                        } 
+                        else if (right_size == 0) 
+                        {
+                            tail->next = left; left = left->next; --left_size;
+                        } 
+                        else if (static_cast<Node*>(right)->data < static_cast<Node*>(left)->data) 
+                        {
+                            tail->next = right; right = right->next; --right_size;
+                        } 
+                        else 
+                        {
+                            tail->next = left; left = left->next; --left_size;
+                        }
+                        tail = tail->next;
+                    }
+                    tail->next = nullptr;
+                    ++merges_done;
+                }
+
+                if (merges_done <= 1) break;
+                
+                list_size *= 2;
+            }
+        }
 
     private:
-        // Helpers for memory management (to avoid duplicating try/catch)
         template <typename... Args>
         Node* create_node(Args&&... args) 
         {
-            Node* new_node = alloc_.allocate(1);
+            Node* new_node = node_traits::allocate(alloc_, 1);
             try 
             {
-                alloc_.construct(new_node, mystl::forward<Args>(args)...);
+                node_traits::construct(alloc_, new_node, mystl::forward<Args>(args)...);
             } 
             catch (...) 
             {
-                alloc_.deallocate(new_node, 1);
+                node_traits::deallocate(alloc_, new_node, 1);
                 throw;
             }
             return new_node;
@@ -213,259 +402,19 @@ namespace mystl
 
         void destroy_node(Node* node) noexcept 
         {
-            alloc_.destroy(node);
-            alloc_.deallocate(node, 1);
+            node_traits::destroy(alloc_, node);
+            node_traits::deallocate(alloc_, node, 1);
         }
     };
 
-
-    template<typename T, typename Allocator>
-    inline ForwardList<T, Allocator>::~ForwardList()
-    {
-        clear();
-    }
-
-    template<typename T, typename Allocator>
-    inline ForwardList<T, Allocator>::ForwardList(const ForwardList& other)
-    {
-        NodeBase* current = &head_;
-        for (const auto& value : other) 
-        {
-            current->next = create_node(value);
-            current = current->next;
-        }
-    }
-
-    template<typename T, typename Allocator>
-    inline ForwardList<T, Allocator>::ForwardList(ForwardList&& other) noexcept
-        : alloc_(mystl::move(other.alloc_)) 
-    {
-        head_.next = other.head_.next;
-        other.head_.next = nullptr;
-    }
-
-    template<typename T, typename Allocator>
-    inline ForwardList<T, Allocator>::ForwardList(std::initializer_list<value_type> init)
-    {
-        NodeBase* current = &head_;
-        for (const auto& value : init) 
-        {
-            current->next = create_node(value);
-            current = current->next;
-        }
-    }
-
-    template<typename T, typename Allocator>
-    inline ForwardList<T, Allocator>& ForwardList<T, Allocator>::operator=(const ForwardList& other)
-    {
-        if (this != &other) 
-        {
-            ForwardList temp(other);
-            swap(temp);
-        }
-        return *this;
-    }
-
-    template<typename T, typename Allocator>
-    inline ForwardList<T, Allocator>& ForwardList<T, Allocator>::operator=(ForwardList&& other) noexcept
-    {
-        if (this != &other) 
-        {
-            clear();
-            alloc_ = mystl::move(other.alloc_);
-            head_.next = other.head_.next;
-            other.head_.next = nullptr;
-        }
-        return *this;
-    }
-
-    template<typename T, typename Allocator>
-    inline void ForwardList<T, Allocator>::clear() noexcept
-    {
-        NodeBase* current = head_.next;
-        while (current) 
-        {
-            NodeBase* next = current->next;
-            destroy_node(static_cast<Node*>(current));
-            current = next;
-        }
-        head_.next = nullptr;
-    }
-
-    template<typename T, typename Allocator>
-    inline ForwardList<T, Allocator>::iterator ForwardList<T, Allocator>::erase_after(const_iterator pos)
-    {
-        NodeBase* current = const_cast<NodeBase*>(pos.node_);
-        NodeBase* node_to_erase = current->next;
-        
-        if (node_to_erase) 
-        {
-            current->next = node_to_erase->next;
-            destroy_node(static_cast<Node*>(node_to_erase));
-        }
-        return iterator(current->next);
-    }
-
-    template<typename T, typename Allocator>
-    inline void ForwardList<T, Allocator>::reverse() noexcept
-    {
-        NodeBase* prev = nullptr;
-        NodeBase* current = head_.next;
-        
-        while (current) 
-        {
-            NodeBase* next_node = current->next;
-            current->next = prev;
-            prev = current;
-            current = next_node;
-        }
-        head_.next = prev;
-    }
-
-    template<typename T, typename Allocator>
-    inline void ForwardList<T, Allocator>::unique()
-    {
-        NodeBase* current = head_.next;
-        if (!current) 
-            return;
-
-        while (current->next) 
-        {
-            Node* curr_node = static_cast<Node*>(current);
-            Node* next_node = static_cast<Node*>(current->next);
-
-            if (curr_node->data == next_node->data) 
-            {
-                NodeBase* duplicate = current->next;
-                current->next = duplicate->next;
-                destroy_node(static_cast<Node*>(duplicate));
-            } 
-            else 
-            {
-                current = current->next;
-            }
-        }
-    }
-
-    template<typename T, typename Allocator>
-    inline void ForwardList<T, Allocator>::merge(ForwardList& other) noexcept
-    {
-        if (this == &other) 
-            return;
-
-        NodeBase* a = head_.next;
-        NodeBase* b = other.head_.next;
-        NodeBase* tail = &head_; // Build directly on our dummy node
-
-        while (a && b) 
-        {
-            // Use the < operator for comparison
-            if (static_cast<Node*>(b)->data < static_cast<Node*>(a)->data) 
-            {
-                tail->next = b;
-                b = b->next;
-            } 
-            else 
-            {
-                tail->next = a;
-                a = a->next;
-            }
-            tail = tail->next;
-        }
-        
-        // Attach the remaining nodes
-        tail->next = a ? a : b;
-        other.head_.next = nullptr;
-    }
-
-    template<typename T, typename Allocator>
-    inline void ForwardList<T, Allocator>::sort()
-    {
-        if (!head_.next || !head_.next->next) 
-            return;
-
-        size_type list_size = 1;
-        while (true) 
-        {
-            NodeBase* current = head_.next;
-            head_.next = nullptr;
-            NodeBase* tail = &head_;
-            size_type merges_done = 0;
-
-            while (current) 
-            {
-                NodeBase* left = current;
-                NodeBase* right = nullptr;
-                size_type left_size = 0;
-                size_type right_size = 0;
-
-                // Measure out the left part
-                for (size_type i = 0; i < list_size && current; ++i) 
-                {
-                    ++left_size;
-                    current = current->next;
-                }
-
-                right = current;
-
-                // Measure out the right part
-                for (size_type i = 0; i < list_size && current; ++i) 
-                {
-                    ++right_size;
-                    current = current->next;
-                }
-
-                // Merge left and right
-                while (left_size > 0 || right_size > 0) 
-                {
-                    if (left_size == 0) 
-                    {
-                        tail->next = right; right = right->next; --right_size;
-                    } 
-                    else if (right_size == 0) 
-                    {
-                        tail->next = left; left = left->next; --left_size;
-                    } 
-                    else if (static_cast<Node*>(right)->data < static_cast<Node*>(left)->data) 
-                    {
-                        tail->next = right; right = right->next; --right_size;
-                    } 
-                    else 
-                    {
-                        tail->next = left; left = left->next; --left_size;
-                    }
-                    tail = tail->next;
-                }
-                tail->next = nullptr; // Close the tail
-                ++merges_done;
-            }
-
-            // If only one run was produced in this pass, the list is sorted
-            if (merges_done <= 1) break;
-            
-            list_size *= 2;
-        }
-    }
-
-    template<typename T, typename Allocator>
-    template<typename ...Args>
-    inline ForwardList<T, Allocator>::iterator ForwardList<T, Allocator>::emplace_after(const_iterator pos, Args && ...args)
-    {
-        Node* new_node = create_node(mystl::forward<Args>(args)...);
-        NodeBase* current = const_cast<NodeBase*>(pos.node_);
-        
-        new_node->next = current->next;
-        current->next = new_node;
-        
-        return iterator(new_node);
-    }
-    
-
-
+    // ========================================================================
+    // GLOBAL OPERATORS AND FUNCTIONS
+    // ========================================================================
     template <typename T, typename Allocator>
-    inline bool ForwardList<T, Allocator>::Iterator::operator==(const ConstIterator& rhs) const noexcept 
+    inline bool operator==(const ForwardListIterator<T, T*, T&>& lhs, 
+                           const ForwardListIterator<T, const T*, const T&>& rhs) noexcept 
     {
-        return node_ == rhs.node_;
+        return lhs.node_ == rhs.node_;
     }
 
     template <typename T, typename Allocator>
@@ -479,7 +428,7 @@ namespace mystl
             ++it1;
             ++it2;
         }
-        return it1 == lhs.end() && it2 == rhs.end(); // Verify that both lists ended at the same time
+        return it1 == lhs.end() && it2 == rhs.end();
     }
 
     template <typename T, typename Allocator>
@@ -488,6 +437,10 @@ namespace mystl
         return !(lhs == rhs);
     }
 
-
+    template <typename T, typename Allocator>
+    void swap(ForwardList<T, Allocator>& lhs, ForwardList<T, Allocator>& rhs) noexcept 
+    {
+        lhs.swap(rhs);
+    }
 
 } // namespace mystl

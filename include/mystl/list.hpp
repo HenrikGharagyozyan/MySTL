@@ -13,7 +13,7 @@ namespace mystl
 {
     namespace detail 
     {
-        // Вспомогательные структуры вынесены в detail, чтобы не зависеть от константности итератора
+        // Helper structures are moved to detail to avoid depending on iterator constness
         struct ListNodeBase 
         {
             ListNodeBase* prev;
@@ -31,7 +31,7 @@ namespace mystl
     }
 
     // ========================================================================
-    // ЕДИНЫЙ ШАБЛОННЫЙ ИТЕРАТОР (ДВУНАПРАВЛЕННЫЙ)
+    // SINGLE TEMPLATE ITERATOR (BIDIRECTIONAL)
     // ========================================================================
     template <typename Value, typename Pointer, typename Reference>
     class ListIterator 
@@ -51,7 +51,7 @@ namespace mystl
         ListIterator() noexcept : node_(nullptr) {}
         explicit ListIterator(NodeBase* ptr) noexcept : node_(ptr) {}
 
-        // Конструктор конверсии из мутабельного итератора в константный
+        // Conversion constructor from mutable iterator to const iterator
         template <typename P, typename R>
         ListIterator(const ListIterator<Value, P, R>& other) noexcept : node_(other.node_) {}
 
@@ -96,7 +96,7 @@ namespace mystl
     };
 
     // ========================================================================
-    // ДВУСВЯЗНЫЙ СПИСОК (LIST)
+    // DOUBLY LINKED LIST (LIST)
     // ========================================================================
     template <typename T, typename Allocator = mystl::Allocator<T>>
     class List 
@@ -105,8 +105,8 @@ namespace mystl
         using NodeBase = detail::ListNodeBase;
         using Node     = detail::ListNode<T>;
 
-        // mutable позволяет брать неконстантный указатель &sentinel_ даже в const-методах (cbegin/cend)
-        // Это полностью избавляет нас от использования грязных const_cast!
+        // mutable allows taking a non-const pointer &sentinel_ even in const methods (cbegin/cend)
+        // This completely removes the need for ugly const_cast!
         mutable NodeBase sentinel_;
         std::size_t size_ = 0;
         
@@ -131,7 +131,7 @@ namespace mystl
         using const_reverse_iterator = mystl::reverse_iterator<const_iterator>;
 
         // ========================================================================
-        // ДОСТУП К ДАННЫМ & ИТЕРАТОРЫ
+        // DATA ACCESS & ITERATORS
         // ========================================================================
         iterator begin() noexcept { return iterator(sentinel_.next); }
         iterator end() noexcept { return iterator(&sentinel_); }
@@ -156,7 +156,7 @@ namespace mystl
         const_reference back() const { return *(--end()); }
 
         // ========================================================================
-        // КОНСТРУКТОРЫ И DESTRUCTOR
+        // CONSTRUCTORS AND DESTRUCTOR
         // ========================================================================
         List() noexcept : sentinel_() {}
 
@@ -217,7 +217,7 @@ namespace mystl
         }
 
         // ========================================================================
-        // МОДИФИКАТОРЫ
+        // MODIFIERS
         // ========================================================================
         template <typename... Args>
         iterator emplace(const_iterator pos, Args&&... args) 
@@ -233,7 +233,7 @@ namespace mystl
                 throw;
             }
 
-            // Обрати внимание: больше никаких const_cast!
+            // Note: no more const_cast!
             NodeBase* current = pos.node_; 
             NodeBase* prev_node = current->prev;
 
@@ -319,7 +319,7 @@ namespace mystl
         }
 
         // ========================================================================
-        // АЛГОРИТМЫ УПРАВЛЕНИЯ СПИСКОМ
+        // LIST MANAGEMENT ALGORITHMS
         // ========================================================================
         void reverse() noexcept 
         {
@@ -449,7 +449,7 @@ namespace mystl
     };
 
     // ========================================================================
-    // ГЛОБАЛЬНЫЕ ОПЕРАТОРЫ И ФУНКЦИИ
+    // GLOBAL OPERATORS AND FUNCTIONS
     // ========================================================================
     template <typename T, typename Allocator>
     bool operator==(const List<T, Allocator>& lhs, const List<T, Allocator>& rhs) 

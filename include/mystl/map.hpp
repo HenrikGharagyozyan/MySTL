@@ -101,7 +101,7 @@ namespace mystl
         
         mapped_type& operator[](const key_type& key) 
         {
-            // OPTIMIZATION: First search. If the key exists — don't allocate extra memory!
+            // OPTIMIZATION: First lookup. If the key already exists, don't allocate extra memory!
             iterator it = tree_.find(key);
             if (it != end()) 
                 return it->second;

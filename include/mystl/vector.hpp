@@ -204,7 +204,7 @@ namespace mystl
             {
                 pointer new_data = allocator_traits_type::allocate(alloc_, new_cap);
                 
-                // Используем наш безопасный uninitialized_move для переноса элементов
+                // Use our safe uninitialized_move to transfer elements
                 mystl::uninitialized_move(data_, data_ + size_, new_data);
                 mystl::destroy(data_, data_ + size_);
                 
@@ -289,7 +289,7 @@ namespace mystl
             } 
             else 
             {
-                // Сдвигаем элементы вправо
+                // Shift elements to the right
                 allocator_traits_type::construct(alloc_, data_ + size_, mystl::move(data_[size_ - 1]));
                 for (size_type i = size_ - 1; i > index; --i) 
                 {
