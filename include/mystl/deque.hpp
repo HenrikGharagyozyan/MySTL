@@ -524,6 +524,15 @@ namespace mystl
             finish_ = start_;
         }
 
+        void swap(Deque& other) noexcept 
+        {
+            mystl::swap(start_, other.start_);
+            mystl::swap(finish_, other.finish_);
+            mystl::swap(map_, other.map_);
+            mystl::swap(map_size_, other.map_size_);
+            mystl::swap(alloc_, other.alloc_);
+        }
+
     private:
         // ========================================================================
         // AUXILIARY MEMORY MANAGEMENT METHODS
