@@ -155,10 +155,12 @@ namespace mystl
     template <typename Alloc>
     struct allocator_traits 
     {
-        using allocator_type = Alloc;
-        using value_type     = typename Alloc::value_type;
-        using pointer        = value_type*;
-        using size_type      = std::size_t;
+        using allocator_type   = Alloc;
+        using value_type       = typename Alloc::value_type;
+        using pointer          = value_type*;
+        using const_pointer    = const value_type*;
+        using difference_type  = std::ptrdiff_t;
+        using size_type        = std::size_t;
 
         template <typename T>
         using rebind_alloc = typename detail::rebind_alloc_helper<Alloc, T>::type;
