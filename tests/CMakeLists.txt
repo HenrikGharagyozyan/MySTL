@@ -66,6 +66,10 @@ add_executable(test_multiset test_multiset.cpp)
 target_link_libraries(test_multiset PRIVATE mystl GTest::gtest_main)
 gtest_discover_tests(test_multiset)
 
+add_executable(test_multimap test_multimap.cpp)
+target_link_libraries(test_multimap PRIVATE mystl GTest::gtest_main)
+gtest_discover_tests(test_multimap)
+
 add_executable(test_algorithm test_algorithm.cpp)
 target_link_libraries(test_algorithm PRIVATE mystl GTest::gtest_main)
 gtest_discover_tests(test_algorithm)
