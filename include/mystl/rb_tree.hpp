@@ -263,9 +263,17 @@ namespace mystl
         RBTreeIterator() noexcept : node(nullptr), nil(nullptr) {}
         RBTreeIterator(BasePtr n, BasePtr sentinel) noexcept : node(n), nil(sentinel) {}
 
+        RBTreeIterator(const RBTreeIterator&) = default;
+        RBTreeIterator& operator=(const RBTreeIterator&) = default;
+        RBTreeIterator(RBTreeIterator&&) = default;
+        RBTreeIterator& operator=(RBTreeIterator&&) = default;
+
         // Allow conversion iterator -> const_iterator, but not vice versa
+        template <typename Dummy = void>
         RBTreeIterator(const RBTreeIterator<Value, Value*, Value&>& other) noexcept
-            : node(other.node), nil(other.nil) {}
+            : node(other.node), nil(other.nil) 
+        {
+        }
 
         reference operator*() const { return static_cast<RBNode<Value>*>(node)->value; }
         pointer operator->() const { return &(static_cast<RBNode<Value>*>(node)->value); }
@@ -307,7 +315,10 @@ namespace mystl
             else if (node->left != nil) 
             {
                 node = node->left;
-                while (node->right != nil) node = node->right;
+                while (node->right != nil) 
+                {
+                    node = node->right;
+                }
             } 
             else 
             {
@@ -474,7 +485,8 @@ namespace mystl
 
         RBTree& operator=(const RBTree& other) 
         {
-            if (this == &other) return *this;
+            if (this == &other) 
+                return *this;
             RBTree temp(other); 
             swap(temp);         
             return *this;
@@ -482,7 +494,8 @@ namespace mystl
 
         RBTree& operator=(RBTree&& other) noexcept
         {
-            if (this == &other) return *this;
+            if (this == &other) 
+                return *this;
 
             if (nil_) 
             {
@@ -532,7 +545,8 @@ namespace mystl
         mystl::Pair<iterator, bool> emplace_unique(Args&&... args) 
         {
             // Lazy initialization for moved-from containers
-            if (!nil_) init_nil();
+            if (!nil_) 
+                init_nil();
 
             Node* z = create_node(nullptr, nil_, nil_, RBColor::Red, mystl::forward<Args>(args)...);
             const Key& key = extract_key_(z->value);
@@ -545,8 +559,10 @@ namespace mystl
                 y = x;
                 const Key& x_key = extract_key_(static_cast<Node*>(x)->value);
                 
-                if (comp_(key, x_key)) x = x->left;
-                else if (comp_(x_key, key)) x = x->right;
+                if (comp_(key, x_key)) 
+                    x = x->left;
+                else if (comp_(x_key, key)) 
+                    x = x->right;
                 else 
                 {
                     destroy_node(z);
@@ -568,7 +584,8 @@ namespace mystl
         template <typename... Args>
         iterator emplace_equal(Args&&... args)
         {
-            if (!nil_) init_nil();
+            if (!nil_) 
+                init_nil();
 
             Node* z = create_node(nullptr, nil_, nil_, RBColor::Red, mystl::forward<Args>(args)...);
             const Key& key = extract_key_(z->value);

@@ -1,35 +1,21 @@
 #pragma once
 
 #include "utility.hpp"
+#include "functional.hpp" // Твой файл с hash и equal_to
+#include "allocator.hpp"
+#include "memory.hpp"     
 #include <cstddef>
-#include <functional> 
 #include <cassert>
 
 namespace mystl 
 {
-    template <typename Key>
-    struct hash 
-    {
-        size_t operator()(const Key& key) const 
-        {
-            return std::hash<Key>{}(key);
-        }
-    };
-
-    template <typename T>
-    struct equal_to 
-    {
-        constexpr bool operator()(const T& lhs, const T& rhs) const 
-        {
-            return lhs == rhs;
-        }
-    };
 
     template <
         typename Key, 
         typename T, 
         typename Hash = mystl::hash<Key>, 
-        typename KeyEqual = mystl::equal_to<Key>
+        typename KeyEqual = mystl::equal_to,
+        typename Allocator = mystl::Allocator<mystl::Pair<const Key, T>>
     >
     class UnorderedMap 
     {
@@ -40,6 +26,7 @@ namespace mystl
         using size_type       = std::size_t;
         using hasher          = Hash;
         using key_equal       = KeyEqual;
+        using allocator_type  = Allocator;
         using reference       = value_type&;
         using const_reference = const value_type&;
 
@@ -57,12 +44,19 @@ namespace mystl
             }
         };
 
-        Node** buckets_         = nullptr;
-        size_type bucket_count_    = 0;
-        size_type size_            = 0;
-        float     max_load_factor_ = 1.0f;
-        hasher    hash_func_;
-        key_equal equal_func_;
+        using node_allocator = typename mystl::allocator_traits<Allocator>::template rebind_alloc<Node>;
+        using node_traits    = mystl::allocator_traits<node_allocator>;
+        using bucket_alloc   = typename mystl::allocator_traits<Allocator>::template rebind_alloc<Node*>;
+        using bucket_traits  = mystl::allocator_traits<bucket_alloc>;
+
+        Node**      buckets_         = nullptr;
+        size_type   bucket_count_    = 0;
+        size_type   size_            = 0;
+        float       max_load_factor_ = 1.0f;
+        
+        [[no_unique_address]] node_allocator node_alloc_;
+        [[no_unique_address]] hasher         hash_func_;
+        [[no_unique_address]] key_equal      equal_func_;
 
         size_type get_bucket_index(const Key& key, size_type b_count) const 
         {
