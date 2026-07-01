@@ -14,7 +14,7 @@ TEST(UnorderedMultiMapTest, InsertionAndValueModification)
     EXPECT_EQ(mmap.size(), 2);
     EXPECT_EQ(mmap.count(1), 2);
 
-    // Modify the value through a non-const iterator (allowed in a multimap)
+    // Modify the value through a non-const iterator (allowed in a MultiMap)
     auto it = mmap.find(1);
     ASSERT_NE(it, mmap.end());
     it->second = "ModifiedSystem";

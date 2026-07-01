@@ -10,14 +10,14 @@
 // ============================================================================
 TEST(MultiMapTest, DefaultConstructor) 
 {
-    mystl::multimap<int, std::string> mmap;
+    mystl::MultiMap<int, std::string> mmap;
     EXPECT_TRUE(mmap.empty());
     EXPECT_EQ(mmap.size(), 0);
 }
 
 TEST(MultiMapTest, InitializerListConstructor) 
 {
-    mystl::multimap<int, std::string> mmap = {
+    mystl::MultiMap<int, std::string> mmap = {
         {1, "apple"}, 
         {2, "banana"}, 
         {1, "apricot"}, 
@@ -31,13 +31,13 @@ TEST(MultiMapTest, InitializerListConstructor)
 
 TEST(MultiMapTest, CopyAndMoveConstructors) 
 {
-    mystl::multimap<int, int> original = {{1, 10}, {1, 20}, {2, 30}};
+    mystl::MultiMap<int, int> original = {{1, 10}, {1, 20}, {2, 30}};
     
-    mystl::multimap<int, int> copy(original);
+    mystl::MultiMap<int, int> copy(original);
     EXPECT_EQ(copy.size(), 3);
     EXPECT_EQ(copy.count(1), 2);
 
-    mystl::multimap<int, int> moved(std::move(original));
+    mystl::MultiMap<int, int> moved(std::move(original));
     EXPECT_EQ(moved.size(), 3);
     EXPECT_EQ(moved.count(2), 1);
     EXPECT_TRUE(original.empty());
@@ -48,7 +48,7 @@ TEST(MultiMapTest, CopyAndMoveConstructors)
 // ============================================================================
 TEST(MultiMapTest, InsertAndEmplace) 
 {
-    mystl::multimap<std::string, int> mmap;
+    mystl::MultiMap<std::string, int> mmap;
     
     // Insert single elements
     mmap.insert({"key1", 100});
@@ -64,7 +64,7 @@ TEST(MultiMapTest, InsertAndEmplace)
 
 TEST(MultiMapTest, EraseByKey) 
 {
-    mystl::multimap<int, std::string> mmap = {
+    mystl::MultiMap<int, std::string> mmap = {
         {1, "A"}, {2, "B"}, {2, "C"}, {2, "D"}, {3, "E"}
     };
     
@@ -79,7 +79,7 @@ TEST(MultiMapTest, EraseByKey)
 
 TEST(MultiMapTest, EraseByIterator) 
 {
-    mystl::multimap<int, std::string> mmap = {{1, "A"}, {1, "B"}, {1, "C"}};
+    mystl::MultiMap<int, std::string> mmap = {{1, "A"}, {1, "B"}, {1, "C"}};
     
     auto it = mmap.find(1); // Points to one of the '1's
     EXPECT_NE(it, mmap.end());
@@ -94,7 +94,7 @@ TEST(MultiMapTest, EraseByIterator)
 // ============================================================================
 TEST(MultiMapTest, AtMethod) 
 {
-    mystl::multimap<int, std::string> mmap = {{1, "First"}, {2, "Second"}};
+    mystl::MultiMap<int, std::string> mmap = {{1, "First"}, {2, "Second"}};
     
     EXPECT_EQ(mmap.at(1), "First");
     EXPECT_EQ(mmap.at(2), "Second");
@@ -112,7 +112,7 @@ TEST(MultiMapTest, AtMethod)
 // ============================================================================
 TEST(MultiMapTest, BoundsAndEqualRange) 
 {
-    mystl::multimap<int, std::string> mmap = {
+    mystl::MultiMap<int, std::string> mmap = {
         {10, "A"}, 
         {20, "B1"}, 
         {20, "B2"}, 
@@ -140,7 +140,7 @@ TEST(MultiMapTest, BoundsAndEqualRange)
 // ============================================================================
 TEST(MultiMapTest, ValueCompare) 
 {
-    mystl::multimap<int, std::string> mmap;
+    mystl::MultiMap<int, std::string> mmap;
     auto val_comp = mmap.value_comp();
     
     mystl::Pair<const int, std::string> p1{1, "A"};
