@@ -9,14 +9,14 @@
 #include "iterator.hpp"
 #include "algorithm.hpp"
 
-namespace mystl 
+namespace mystl
 {
     template <
-        typename Key, 
-        typename Compare = mystl::less, 
+        typename Key,
+        typename Compare = mystl::less,
         typename Allocator = mystl::Allocator<Key>
     >
-    class multiset 
+    class MultiSet
     {
     private:
         using Tree = RBTree<Key, Key, Identity<Key>, Compare, Allocator>;
@@ -47,60 +47,60 @@ namespace mystl
         // ========================================================================
         // CONSTRUCTORS & DESTRUCTOR
         // ========================================================================
-        multiset() : tree_() {}
+        MultiSet() : tree_() {}
 
-        explicit multiset(const Compare& comp, const Allocator& alloc = Allocator())
-            : tree_(comp, alloc) 
+        explicit MultiSet(const Compare& comp, const Allocator& alloc = Allocator())
+            : tree_(comp, alloc)
         {
         }
 
-        explicit multiset(const Allocator& alloc)
-            : tree_(Compare(), alloc) 
+        explicit MultiSet(const Allocator& alloc)
+            : tree_(Compare(), alloc)
         {
         }
 
         template <typename InputIt>
-        multiset(InputIt first, InputIt last, const Compare& comp = Compare(), const Allocator& alloc = Allocator())
-            : tree_(comp, alloc) 
+        MultiSet(InputIt first, InputIt last, const Compare& comp = Compare(), const Allocator& alloc = Allocator())
+            : tree_(comp, alloc)
         {
             insert(first, last);
         }
 
-        multiset(std::initializer_list<value_type> ilist, const Compare& comp = Compare(), const Allocator& alloc = Allocator())
-            : tree_(comp, alloc) 
+        MultiSet(std::initializer_list<value_type> ilist, const Compare& comp = Compare(), const Allocator& alloc = Allocator())
+            : tree_(comp, alloc)
         {
             insert(ilist.begin(), ilist.end());
         }
 
-        multiset(const multiset& other) : tree_(other.tree_) {}
-        
-        multiset(const multiset& other, const Allocator& alloc) 
-            : tree_(other.tree_, alloc) 
+        MultiSet(const MultiSet& other) : tree_(other.tree_) {}
+
+        MultiSet(const MultiSet& other, const Allocator& alloc)
+            : tree_(other.tree_, alloc)
         {
         }
 
-        multiset(multiset&& other) noexcept : tree_(mystl::move(other.tree_)) {}
-        
-        multiset(multiset&& other, const Allocator& alloc)
-            : tree_(mystl::move(other.tree_), alloc) 
+        MultiSet(MultiSet&& other) noexcept : tree_(mystl::move(other.tree_)) {}
+
+        MultiSet(MultiSet&& other, const Allocator& alloc) noexcept
+            : tree_(mystl::move(other.tree_), alloc)
         {
         }
 
-        ~multiset() = default;
+        ~MultiSet() = default;
 
-        multiset& operator=(const multiset& other) 
+        MultiSet& operator=(const MultiSet& other)
         {
             tree_ = other.tree_;
             return *this;
         }
 
-        multiset& operator=(multiset&& other) noexcept 
+        MultiSet& operator=(MultiSet&& other) noexcept
         {
             tree_ = mystl::move(other.tree_);
             return *this;
         }
 
-        multiset& operator=(std::initializer_list<value_type> ilist) 
+        MultiSet& operator=(std::initializer_list<value_type> ilist)
         {
             clear();
             insert(ilist.begin(), ilist.end());
@@ -138,67 +138,60 @@ namespace mystl
         // ========================================================================
         void clear() noexcept { tree_.clear(); }
 
-        iterator insert(const value_type& value) 
+        iterator insert(const value_type& value)
         {
             return tree_.emplace_equal(value);
         }
 
-        iterator insert(value_type&& value) 
+        iterator insert(value_type&& value)
         {
             return tree_.emplace_equal(mystl::move(value));
         }
 
         template <typename InputIt>
-        void insert(InputIt first, InputIt last) 
+        void insert(InputIt first, InputIt last)
         {
-            for (; first != last; ++first) 
-            {
+            for (; first != last; ++first)
                 tree_.emplace_equal(*first);
-            }
         }
 
-        void insert(std::initializer_list<value_type> ilist) 
+        void insert(std::initializer_list<value_type> ilist)
         {
             insert(ilist.begin(), ilist.end());
         }
 
         template <typename... Args>
-        iterator emplace(Args&&... args) 
+        iterator emplace(Args&&... args)
         {
             return tree_.emplace_equal(mystl::forward<Args>(args)...);
         }
 
-        iterator erase(const_iterator pos) 
+        iterator erase(const_iterator pos)
         {
-            // Reconstruct a mutable iterator to pass to tree_.erase
-            typename Tree::iterator mutable_it(pos.node, pos.nil);
-            return tree_.erase(mutable_it);
+            return tree_.erase(pos);
         }
 
-        iterator erase(const_iterator first, const_iterator last) 
+        iterator erase(const_iterator first, const_iterator last)
         {
-            while (first != last) 
-            {
+            while (first != last)
                 first = erase(first);
-            }
             return last;
         }
 
-        size_type erase(const key_type& key) 
+        size_type erase(const key_type& key)
         {
             auto range = tree_.equal_range(key);
             size_type count = 0;
             auto it = range.first;
-            while (it != range.second) 
+            while (it != range.second)
             {
-                // tree_.erase(iterator) returns the next valid iterator
                 it = tree_.erase(it);
                 ++count;
             }
             return count;
         }
 
-        void swap(multiset& other) noexcept 
+        void swap(MultiSet& other) noexcept
         {
             tree_.swap(other.tree_);
         }
@@ -211,7 +204,7 @@ namespace mystl
 
         bool contains(const key_type& key) const noexcept { return tree_.contains(key); }
 
-        size_type count(const key_type& key) const noexcept 
+        size_type count(const key_type& key) const noexcept
         {
             auto range = equal_range(key);
             return mystl::distance(range.first, range.second);
@@ -223,12 +216,12 @@ namespace mystl
         iterator upper_bound(const key_type& key) noexcept { return tree_.upper_bound(key); }
         const_iterator upper_bound(const key_type& key) const noexcept { return tree_.upper_bound(key); }
 
-        mystl::Pair<iterator, iterator> equal_range(const key_type& key) noexcept 
+        mystl::Pair<iterator, iterator> equal_range(const key_type& key) noexcept
         {
             return static_cast<const Tree&>(tree_).equal_range(key);
         }
 
-        mystl::Pair<const_iterator, const_iterator> equal_range(const key_type& key) const noexcept 
+        mystl::Pair<const_iterator, const_iterator> equal_range(const key_type& key) const noexcept
         {
             return tree_.equal_range(key);
         }
@@ -238,22 +231,22 @@ namespace mystl
     // NON-MEMBER OPERATORS
     // ============================================================================
     template <typename Key, typename Compare, typename Allocator>
-    bool operator==(const multiset<Key, Compare, Allocator>& lhs, 
-                    const multiset<Key, Compare, Allocator>& rhs) 
+    bool operator==(const MultiSet<Key, Compare, Allocator>& lhs,
+                    const MultiSet<Key, Compare, Allocator>& rhs)
     {
         return lhs.size() == rhs.size() && mystl::equal(lhs.begin(), lhs.end(), rhs.begin());
     }
 
     template <typename Key, typename Compare, typename Allocator>
-    bool operator!=(const multiset<Key, Compare, Allocator>& lhs, 
-                    const multiset<Key, Compare, Allocator>& rhs) 
+    bool operator!=(const MultiSet<Key, Compare, Allocator>& lhs,
+                    const MultiSet<Key, Compare, Allocator>& rhs)
     {
         return !(lhs == rhs);
     }
 
     template <typename Key, typename Compare, typename Allocator>
-    void swap(multiset<Key, Compare, Allocator>& lhs, 
-              multiset<Key, Compare, Allocator>& rhs) noexcept 
+    void swap(MultiSet<Key, Compare, Allocator>& lhs,
+              MultiSet<Key, Compare, Allocator>& rhs) noexcept
     {
         lhs.swap(rhs);
     }

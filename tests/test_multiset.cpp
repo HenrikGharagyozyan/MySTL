@@ -9,14 +9,14 @@
 // ============================================================================
 TEST(MultiSetTest, DefaultConstructor) 
 {
-    mystl::multiset<int> mset;
+    mystl::MultiSet<int> mset;
     EXPECT_TRUE(mset.empty());
     EXPECT_EQ(mset.size(), 0);
 }
 
 TEST(MultiSetTest, InitializerListConstructor) 
 {
-    mystl::multiset<int> mset = {5, 2, 8, 2, 5, 5};
+    mystl::MultiSet<int> mset = {5, 2, 8, 2, 5, 5};
     EXPECT_FALSE(mset.empty());
     EXPECT_EQ(mset.size(), 6);
     
@@ -33,8 +33,8 @@ TEST(MultiSetTest, InitializerListConstructor)
 
 TEST(MultiSetTest, CopyConstructor) 
 {
-    mystl::multiset<int> original = {10, 20, 10, 30};
-    mystl::multiset<int> copy(original);
+    mystl::MultiSet<int> original = {10, 20, 10, 30};
+    mystl::MultiSet<int> copy(original);
     
     EXPECT_EQ(copy.size(), 4);
     EXPECT_TRUE(copy == original);
@@ -42,8 +42,8 @@ TEST(MultiSetTest, CopyConstructor)
 
 TEST(MultiSetTest, MoveConstructor) 
 {
-    mystl::multiset<std::string> original = {"apple", "banana", "apple"};
-    mystl::multiset<std::string> moved(std::move(original));
+    mystl::MultiSet<std::string> original = {"apple", "banana", "apple"};
+    mystl::MultiSet<std::string> moved(std::move(original));
     
     EXPECT_EQ(moved.size(), 3);
     EXPECT_EQ(moved.count("apple"), 2);
@@ -55,7 +55,7 @@ TEST(MultiSetTest, MoveConstructor)
 // ============================================================================
 TEST(MultiSetTest, InsertSingleElement) 
 {
-    mystl::multiset<int> mset;
+    mystl::MultiSet<int> mset;
     auto it1 = mset.insert(42);
     EXPECT_EQ(*it1, 42);
     EXPECT_EQ(mset.size(), 1);
@@ -68,7 +68,7 @@ TEST(MultiSetTest, InsertSingleElement)
 
 TEST(MultiSetTest, Emplace) 
 {
-    mystl::multiset<std::string> mset;
+    mystl::MultiSet<std::string> mset;
     mset.emplace("hello");
     mset.emplace(5, 'A'); // Constructs "AAAAA"
     mset.emplace("hello");
@@ -80,7 +80,7 @@ TEST(MultiSetTest, Emplace)
 
 TEST(MultiSetTest, EraseByKey) 
 {
-    mystl::multiset<int> mset = {1, 2, 2, 2, 3, 4, 4};
+    mystl::MultiSet<int> mset = {1, 2, 2, 2, 3, 4, 4};
     
     size_t erased_count = mset.erase(2);
     EXPECT_EQ(erased_count, 3);
@@ -94,7 +94,7 @@ TEST(MultiSetTest, EraseByKey)
 
 TEST(MultiSetTest, EraseByIterator) 
 {
-    mystl::multiset<int> mset = {10, 20, 20, 30};
+    mystl::MultiSet<int> mset = {10, 20, 20, 30};
     
     auto it = mset.find(20);
     EXPECT_NE(it, mset.end());
@@ -107,7 +107,7 @@ TEST(MultiSetTest, EraseByIterator)
 
 TEST(MultiSetTest, Clear) 
 {
-    mystl::multiset<int> mset = {1, 1, 1, 2, 3};
+    mystl::MultiSet<int> mset = {1, 1, 1, 2, 3};
     EXPECT_FALSE(mset.empty());
     
     mset.clear();
@@ -121,7 +121,7 @@ TEST(MultiSetTest, Clear)
 // ============================================================================
 TEST(MultiSetTest, FindAndContains) 
 {
-    mystl::multiset<int> mset = {5, 10, 10, 15};
+    mystl::MultiSet<int> mset = {5, 10, 10, 15};
     
     EXPECT_TRUE(mset.contains(10));
     EXPECT_FALSE(mset.contains(20));
@@ -135,7 +135,7 @@ TEST(MultiSetTest, FindAndContains)
 
 TEST(MultiSetTest, Count) 
 {
-    mystl::multiset<int> mset = {7, 7, 7, 8, 9, 9};
+    mystl::MultiSet<int> mset = {7, 7, 7, 8, 9, 9};
     
     EXPECT_EQ(mset.count(7), 3);
     EXPECT_EQ(mset.count(8), 1);
@@ -145,7 +145,7 @@ TEST(MultiSetTest, Count)
 
 TEST(MultiSetTest, BoundsAndEqualRange) 
 {
-    mystl::multiset<int> mset = {10, 20, 20, 20, 30};
+    mystl::MultiSet<int> mset = {10, 20, 20, 20, 30};
     
     auto lower = mset.lower_bound(20);
     auto upper = mset.upper_bound(20);
@@ -175,7 +175,7 @@ TEST(MultiSetTest, BoundsAndEqualRange)
 // ============================================================================
 TEST(MultiSetTest, ReverseIterators) 
 {
-    mystl::multiset<int> mset = {1, 2, 2, 3};
+    mystl::MultiSet<int> mset = {1, 2, 2, 3};
     std::vector<int> result;
     
     for (auto it = mset.rbegin(); it != mset.rend(); ++it) 
