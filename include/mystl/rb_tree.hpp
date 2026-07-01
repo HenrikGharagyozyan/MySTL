@@ -457,10 +457,27 @@ namespace mystl
         RBTree(const RBTree& other)
             : alloc_(mystl::allocator_traits<allocator_type>::select_on_container_copy_construction(other.alloc_))
             , base_alloc_(mystl::allocator_traits<base_allocator_type>::select_on_container_copy_construction(other.base_alloc_))
-            , comp_(other.comp_), extract_key_(other.extract_key_), root_(nullptr), nil_(nullptr), size_(0) 
+            , comp_(other.comp_), extract_key_(other.extract_key_), root_(nullptr), nil_(nullptr), size_(0)
         {
             init_nil();
-            if (other.nil_ && other.root_ != other.nil_) 
+            if (other.nil_ && other.root_ != other.nil_)
+            {
+                root_ = copy_tree(other.root_, nil_, other.nil_);
+                size_ = other.size_;
+            }
+        }
+
+        RBTree(const RBTree& other, const Allocator& alloc)
+            : alloc_(alloc)
+            , base_alloc_(alloc)
+            , comp_(other.comp_)
+            , extract_key_(other.extract_key_)
+            , root_(nullptr)
+            , nil_(nullptr)
+            , size_(0)
+        {
+            init_nil();
+            if (other.nil_ && other.root_ != other.nil_)
             {
                 root_ = copy_tree(other.root_, nil_, other.nil_);
                 size_ = other.size_;
@@ -476,8 +493,20 @@ namespace mystl
             , nil_(other.nil_)
             , size_(other.size_)
         {
-            // Leave moved-from in a safe but uninitialized state (nil_ = nullptr)
-            // Makes the move constructor 100% noexcept and zero-allocation
+            other.root_ = nullptr;
+            other.nil_ = nullptr;
+            other.size_ = 0;
+        }
+
+        RBTree(RBTree&& other, const Allocator& alloc) noexcept
+            : alloc_(alloc)
+            , base_alloc_(alloc)
+            , comp_(mystl::move(other.comp_))
+            , extract_key_(mystl::move(other.extract_key_))
+            , root_(other.root_)
+            , nil_(other.nil_)
+            , size_(other.size_)
+        {
             other.root_ = nullptr;
             other.nil_ = nullptr;
             other.size_ = 0;
@@ -727,7 +756,8 @@ namespace mystl
         size_type erase(const Key& key)
         {
             iterator it = find(key);
-            if (it == end()) return 0;
+            if (it == end()) 
+                return 0;
 
             delete_node(it.node);
             return 1;
@@ -736,6 +766,14 @@ namespace mystl
         iterator erase(iterator pos)
         {
             iterator next = pos;
+            ++next;
+            delete_node(pos.node);
+            return next;
+        }
+
+        iterator erase(const_iterator pos)
+        {
+            iterator next = iterator(pos.node, pos.nil);
             ++next;
             delete_node(pos.node);
             return next;
