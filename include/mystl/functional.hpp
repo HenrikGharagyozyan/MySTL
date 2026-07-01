@@ -3,6 +3,7 @@
 #include "utility.hpp"
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 namespace mystl
 {
@@ -189,7 +190,7 @@ namespace mystl
             return hash;
         }
 
-        inline constexpr std::size_t fnv1a_64(const char* s, std::size_t count) noexcept 
+        inline constexpr std::size_t fnv1a_64(const char* s, std::size_t count) noexcept
         {
             std::size_t hash = 14695981039346656037ull;
             for (std::size_t i = 0; i < count; ++i) 
@@ -257,11 +258,31 @@ namespace mystl
 
     // Specialization for pointers
     template <typename T>
-    struct hash<T*> 
+    struct hash<T*>
     {
-        std::size_t operator()(T* ptr) const noexcept 
+        std::size_t operator()(T* ptr) const noexcept
         {
             return reinterpret_cast<std::size_t>(ptr);
+        }
+    };
+
+    // Specialization for std::string
+    template <>
+    struct hash<std::string>
+    {
+        std::size_t operator()(const std::string& s) const noexcept
+        {
+            return detail::hash_bytes(s.data(), s.size());
+        }
+    };
+
+    // Specialization for std::string_view (C++17)
+    template <>
+    struct hash<std::string_view>
+    {
+        std::size_t operator()(std::string_view sv) const noexcept
+        {
+            return detail::hash_bytes(sv.data(), sv.size());
         }
     };
 

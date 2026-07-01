@@ -27,6 +27,9 @@ namespace mystl
         using hasher          = Hash;
         using key_equal       = KeyEqual;
         using allocator_type  = Allocator;
+        using difference_type = std::ptrdiff_t;
+        using pointer         = typename mystl::allocator_traits<Allocator>::pointer;
+        using const_pointer   = typename mystl::allocator_traits<Allocator>::const_pointer;
         using reference       = value_type&;
         using const_reference = const value_type&;
 
