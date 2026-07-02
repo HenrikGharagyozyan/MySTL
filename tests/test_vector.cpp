@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "mystl/vector.hpp"
 #include <string>
+#include <stdexcept>
 
 TEST(VectorTest, DefaultConstruction)
 {
@@ -99,4 +100,130 @@ TEST(VectorTest, EraseElements)
     EXPECT_EQ(*it, 30); // Should return an iterator to the next element
     EXPECT_EQ(vec.size(), 3);
     EXPECT_EQ(vec[1], 30);
+}
+
+// ============================================================================
+// STRONG EXCEPTION GUARANTEE ON REALLOCATION (move_if_noexcept)
+// ============================================================================
+namespace
+{
+    // A type whose move constructor is NOT noexcept and whose copy constructor
+    // can be armed to throw. Because the move can throw, move_if_noexcept must
+    // fall back to copying during reallocation, keeping the source intact.
+    struct ThrowOnCopy
+    {
+        int value;
+
+        static int  live_instances;
+        static int  copies_until_throw; // -1 disables throwing
+
+        explicit ThrowOnCopy(int v = 0) : value(v) { ++live_instances; }
+
+        ThrowOnCopy(const ThrowOnCopy& other) : value(other.value)
+        {
+            if (copies_until_throw == 0)
+                throw std::runtime_error("ThrowOnCopy: forced copy failure");
+            if (copies_until_throw > 0)
+                --copies_until_throw;
+            ++live_instances;
+        }
+
+        // Deliberately NOT noexcept -> move_if_noexcept will prefer the copy path.
+        ThrowOnCopy(ThrowOnCopy&& other) noexcept(false) : value(other.value)
+        {
+            other.value = -1;
+            ++live_instances;
+        }
+
+        ThrowOnCopy& operator=(const ThrowOnCopy&) = default;
+        ThrowOnCopy& operator=(ThrowOnCopy&&) noexcept(false) = default;
+
+        ~ThrowOnCopy() { --live_instances; }
+    };
+
+    int ThrowOnCopy::live_instances    = 0;
+    int ThrowOnCopy::copies_until_throw = -1;
+}
+
+TEST(VectorTest, MoveIfNoexceptPrefersCopyForThrowingMove)
+{
+    // A throwing move must NOT be selected by move_if_noexcept.
+    static_assert(!mystl::is_nothrow_move_constructible_v<ThrowOnCopy>,
+                  "test type must have a throwing move ctor");
+    static_assert(mystl::is_copy_constructible_v<ThrowOnCopy>,
+                  "test type must be copyable");
+}
+
+TEST(VectorTest, ReserveStrongGuaranteeOnThrowingCopy)
+{
+    ThrowOnCopy::live_instances    = 0;
+    ThrowOnCopy::copies_until_throw = -1;
+
+    mystl::Vector<ThrowOnCopy> vec;
+    vec.reserve(4);
+    vec.emplace_back(1);
+    vec.emplace_back(2);
+    vec.emplace_back(3);
+    vec.emplace_back(4); // fill exactly to capacity so the next append reallocates
+
+    // Snapshot observable state right before the failing reallocation.
+    const ThrowOnCopy* old_data = vec.data();
+    const auto sz = vec.size();
+
+    // Arm the 2nd copy during the next reallocation to throw.
+    ThrowOnCopy::copies_until_throw = 1;
+
+    // A single append now forces reallocation (capacity 4 -> 8), transferring
+    // via copy (throwing move); the 2nd element's copy throws mid-transfer.
+    bool threw = false;
+    try
+    {
+        vec.emplace_back(99);
+    }
+    catch (const std::runtime_error&)
+    {
+        threw = true;
+    }
+
+    ASSERT_TRUE(threw);
+
+    // Strong guarantee: the vector is unchanged by the failed reallocation.
+    EXPECT_EQ(vec.data(), old_data);          // original buffer retained
+    EXPECT_EQ(vec.size(), sz);                // size unchanged
+    EXPECT_EQ(vec[0].value, 1);               // elements intact (not moved-from)
+    EXPECT_EQ(vec[1].value, 2);
+    EXPECT_EQ(vec[2].value, 3);
+    EXPECT_EQ(vec[3].value, 4);
+
+    ThrowOnCopy::copies_until_throw = -1;
+}
+
+TEST(VectorTest, ReallocationLeaksNothingOnThrow)
+{
+    ThrowOnCopy::live_instances    = 0;
+    ThrowOnCopy::copies_until_throw = -1;
+
+    {
+        mystl::Vector<ThrowOnCopy> vec;
+        vec.reserve(2);
+        vec.emplace_back(1);
+        vec.emplace_back(2);
+
+        ThrowOnCopy::copies_until_throw = 1; // throw on 2nd copy during realloc
+
+        try
+        {
+            for (int i = 0; i < 8; ++i)
+                vec.emplace_back(i);
+        }
+        catch (const std::runtime_error&)
+        {
+        }
+
+        ThrowOnCopy::copies_until_throw = -1;
+    }
+
+    // Every constructed element (including the temporary new buffer that was
+    // rolled back) must have been destroyed: no leak, no double-free.
+    EXPECT_EQ(ThrowOnCopy::live_instances, 0);
 }

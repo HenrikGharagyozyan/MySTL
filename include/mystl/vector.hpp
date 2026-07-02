@@ -233,18 +233,29 @@ namespace mystl
         
         [[nodiscard]] allocator_type get_allocator() const noexcept { return alloc_; }
 
-        void reserve(size_type new_cap) 
+        void reserve(size_type new_cap)
         {
-            if (new_cap > capacity_) 
+            if (new_cap > capacity_)
             {
                 pointer new_data = allocator_traits_type::allocate(alloc_, new_cap);
-                
-                // Use our safe uninitialized_move to transfer elements
-                mystl::uninitialized_move(data_, data_ + size_, new_data);
+
+                // Strong guarantee: move only when T's move cannot throw, otherwise
+                // copy, so the source range survives if a transfer throws. If it does
+                // throw, release new_data before propagating to avoid a leak.
+                try
+                {
+                    mystl::uninitialized_move_if_noexcept(data_, data_ + size_, new_data);
+                }
+                catch (...)
+                {
+                    allocator_traits_type::deallocate(alloc_, new_data, new_cap);
+                    throw;
+                }
+
                 mystl::destroy(data_, data_ + size_);
-                
+
                 if (data_) allocator_traits_type::deallocate(alloc_, data_, capacity_);
-                
+
                 data_ = new_data;
                 capacity_ = new_cap;
             }
@@ -260,10 +271,18 @@ namespace mystl
                     data_ = nullptr;
                     capacity_ = 0;
                 } 
-                else 
+                else
                 {
                     pointer new_data = allocator_traits_type::allocate(alloc_, size_);
-                    mystl::uninitialized_move(data_, data_ + size_, new_data);
+                    try
+                    {
+                        mystl::uninitialized_move_if_noexcept(data_, data_ + size_, new_data);
+                    }
+                    catch (...)
+                    {
+                        allocator_traits_type::deallocate(alloc_, new_data, size_);
+                        throw;
+                    }
                     mystl::destroy(data_, data_ + size_);
                     allocator_traits_type::deallocate(alloc_, data_, capacity_);
                     data_ = new_data;
