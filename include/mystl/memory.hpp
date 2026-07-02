@@ -167,18 +167,68 @@ namespace mystl
         };
     }
 
+    namespace detail
+    {
+        // --- Optional member-type detection with standard defaults ---
+        template <typename A, typename = void> struct at_pointer            { using type = typename A::value_type*; };
+        template <typename A> struct at_pointer<A, void_t<typename A::pointer>>                       { using type = typename A::pointer; };
+
+        template <typename A, typename = void> struct at_const_pointer      { using type = const typename A::value_type*; };
+        template <typename A> struct at_const_pointer<A, void_t<typename A::const_pointer>>           { using type = typename A::const_pointer; };
+
+        template <typename A, typename = void> struct at_void_pointer       { using type = void*; };
+        template <typename A> struct at_void_pointer<A, void_t<typename A::void_pointer>>             { using type = typename A::void_pointer; };
+
+        template <typename A, typename = void> struct at_const_void_pointer { using type = const void*; };
+        template <typename A> struct at_const_void_pointer<A, void_t<typename A::const_void_pointer>> { using type = typename A::const_void_pointer; };
+
+        template <typename A, typename = void> struct at_difference_type    { using type = std::ptrdiff_t; };
+        template <typename A> struct at_difference_type<A, void_t<typename A::difference_type>>       { using type = typename A::difference_type; };
+
+        template <typename A, typename = void> struct at_size_type          { using type = std::size_t; };
+        template <typename A> struct at_size_type<A, void_t<typename A::size_type>>                   { using type = typename A::size_type; };
+
+        template <typename A, typename = void> struct at_pocca              { using type = false_type; };
+        template <typename A> struct at_pocca<A, void_t<typename A::propagate_on_container_copy_assignment>> { using type = typename A::propagate_on_container_copy_assignment; };
+
+        template <typename A, typename = void> struct at_pocma              { using type = false_type; };
+        template <typename A> struct at_pocma<A, void_t<typename A::propagate_on_container_move_assignment>> { using type = typename A::propagate_on_container_move_assignment; };
+
+        template <typename A, typename = void> struct at_pocs               { using type = false_type; };
+        template <typename A> struct at_pocs<A, void_t<typename A::propagate_on_container_swap>>      { using type = typename A::propagate_on_container_swap; };
+
+        // is_always_equal defaults to is_empty<Alloc> (a stateless allocator is always equal).
+        template <typename A, typename = void> struct at_always_equal       { using type = bool_constant<is_empty_v<A>>; };
+        template <typename A> struct at_always_equal<A, void_t<typename A::is_always_equal>>          { using type = typename A::is_always_equal; };
+
+        // --- Optional member-function detection (needs declval) ---
+        template <typename A, typename = void> struct has_max_size : false_type {};
+        template <typename A> struct has_max_size<A, void_t<decltype(mystl::declval<const A&>().max_size())>> : true_type {};
+
+        template <typename A, typename = void> struct has_socc : false_type {};
+        template <typename A> struct has_socc<A, void_t<decltype(mystl::declval<const A&>().select_on_container_copy_construction())>> : true_type {};
+    }
+
     // ========================================================================
     // ALLOCATOR TRAITS
     // ========================================================================
     template <typename Alloc>
-    struct allocator_traits 
+    struct allocator_traits
     {
-        using allocator_type   = Alloc;
-        using value_type       = typename Alloc::value_type;
-        using pointer          = value_type*;
-        using const_pointer    = const value_type*;
-        using difference_type  = std::ptrdiff_t;
-        using size_type        = std::size_t;
+        using allocator_type     = Alloc;
+        using value_type         = typename Alloc::value_type;
+
+        using pointer            = typename detail::at_pointer<Alloc>::type;
+        using const_pointer      = typename detail::at_const_pointer<Alloc>::type;
+        using void_pointer       = typename detail::at_void_pointer<Alloc>::type;
+        using const_void_pointer = typename detail::at_const_void_pointer<Alloc>::type;
+        using difference_type    = typename detail::at_difference_type<Alloc>::type;
+        using size_type          = typename detail::at_size_type<Alloc>::type;
+
+        using propagate_on_container_copy_assignment = typename detail::at_pocca<Alloc>::type;
+        using propagate_on_container_move_assignment = typename detail::at_pocma<Alloc>::type;
+        using propagate_on_container_swap            = typename detail::at_pocs<Alloc>::type;
+        using is_always_equal                        = typename detail::at_always_equal<Alloc>::type;
 
         template <typename T>
         using rebind_alloc = typename detail::rebind_alloc_helper<Alloc, T>::type;
@@ -186,31 +236,45 @@ namespace mystl
         template <typename T>
         using rebind_traits = allocator_traits<rebind_alloc<T>>;
 
-        [[nodiscard]] static pointer allocate(Alloc& a, size_type n) 
+        [[nodiscard]] static pointer allocate(Alloc& a, size_type n)
         {
             return a.allocate(n);
         }
 
-        static void deallocate(Alloc& a, pointer p, size_type n) 
+        static void deallocate(Alloc& a, pointer p, size_type n)
         {
             a.deallocate(p, n);
         }
 
         template <typename T, typename... Args>
-        static void construct(Alloc&, T* p, Args&&... args) 
+        static void construct(Alloc&, T* p, Args&&... args)
         {
             mystl::construct_at(p, mystl::forward<Args>(args)...);
         }
 
         template <typename T>
-        static void destroy(Alloc&, T* p) 
+        static void destroy(Alloc&, T* p)
         {
             mystl::destroy_at(p);
         }
 
-        static Alloc select_on_container_copy_construction(const Alloc& rhs) 
+        // Uses the allocator's own max_size() when provided, otherwise the
+        // largest count that cannot overflow value_type-sized allocation.
+        static size_type max_size(const Alloc& a) noexcept
         {
-            return rhs; 
+            if constexpr (detail::has_max_size<Alloc>::value)
+                return a.max_size();
+            else
+                return static_cast<size_type>(-1) / sizeof(value_type);
+        }
+
+        // Prefers the allocator's own hook; otherwise copies the allocator.
+        static Alloc select_on_container_copy_construction(const Alloc& a)
+        {
+            if constexpr (detail::has_socc<Alloc>::value)
+                return a.select_on_container_copy_construction();
+            else
+                return a;
         }
     };
 

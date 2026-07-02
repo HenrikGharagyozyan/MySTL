@@ -28,6 +28,12 @@
             return mystl::move(arg);
         }
 
+        // Produces a value of type T&& in unevaluated contexts only (decltype,
+        // sizeof, noexcept). Never defined and never odr-used, mirroring the
+        // standard declval. Enables member detection in traits.
+        template <typename T>
+        T&& declval() noexcept;
+
         template <typename T>
         constexpr T&& forward(remove_reference_t<T>& arg) noexcept
         {

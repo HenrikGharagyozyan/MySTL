@@ -188,4 +188,7 @@ namespace mystl
     template <typename T>
     inline constexpr bool is_nothrow_move_constructible_v = __is_nothrow_constructible(T, T&&);
 
+    template <typename T>
+    inline constexpr bool is_empty_v = __is_empty(T);
+
 } // namespace mystl
