@@ -34,3 +34,37 @@ TEST(StringTest, MoveSemantics)
     EXPECT_EQ(s2, "Longer string to force heap allocation");
     EXPECT_EQ(s1.size(), 0); 
 }
+TEST(StringTest, OrderingIsUnsignedForHighBytes)
+{
+    // Byte 0xFF (255) must order AFTER 'a' (0x61), not before it as signed
+    // char would (-1 < 97). This matches std::string / char_traits semantics.
+    mystl::String high("\xff");
+    mystl::String low("a");
+
+    EXPECT_TRUE(low < high);
+    EXPECT_FALSE(high < low);
+    EXPECT_TRUE(high > low);
+    EXPECT_TRUE(low <= high);
+    EXPECT_TRUE(high >= low);
+
+    EXPECT_LT(low.compare(high), 0);
+    EXPECT_GT(high.compare(low), 0);
+}
+
+TEST(StringTest, OrderingAsciiRegression)
+{
+    mystl::String a("apple");
+    mystl::String b("banana");
+    mystl::String a2("apple");
+
+    EXPECT_TRUE(a < b);
+    EXPECT_FALSE(b < a);
+    EXPECT_EQ(a.compare(a2), 0);
+    EXPECT_TRUE(a <= a2);
+    EXPECT_TRUE(a >= a2);
+
+    // Prefix orders before the longer string.
+    mystl::String app("app");
+    EXPECT_TRUE(app < a);
+    EXPECT_LT(app.compare(a), 0);
+}
