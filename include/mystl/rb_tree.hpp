@@ -11,22 +11,10 @@
 
 namespace mystl 
 {
-    // ============================================================================
-    // KEY EXTRACTORS
-    // ============================================================================
-    template <typename T>
-    struct Identity 
-    {
-        const T& operator()(const T& x) const { return x; }
-    };
+    // Identity / Select1st key-extraction policies now live in functional.hpp
+    // (shared with the HashTable backbone); functional.hpp is included above.
 
-    template <typename Pair>
-    struct Select1st 
-    {
-        constexpr const auto& operator()(const Pair& p) const noexcept { return p.first; }
-    };
-
-    enum class RBColor : bool 
+    enum class RBColor : bool
     { 
         Red = false, 
         Black = true 

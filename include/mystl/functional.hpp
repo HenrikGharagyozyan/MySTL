@@ -118,6 +118,24 @@ namespace mystl
     };
 
     // ========================================================================
+    // KEY EXTRACTION POLICIES
+    // Shared by the ordered (RBTree) and unordered (HashTable) associative
+    // backbones to obtain a key from a stored value.
+    // ========================================================================
+
+    template <typename T>
+    struct Identity
+    {
+        const T& operator()(const T& x) const { return x; }
+    };
+
+    template <typename Pair>
+    struct Select1st
+    {
+        constexpr const auto& operator()(const Pair& p) const noexcept { return p.first; }
+    };
+
+    // ========================================================================
     // 3. REFERENCE WRAPPER
     // Wrapper that allows storing references in containers or passing them by value
     // ========================================================================
