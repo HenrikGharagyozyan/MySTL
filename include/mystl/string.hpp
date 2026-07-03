@@ -276,8 +276,13 @@ namespace mystl
 
             for (size_type i = 0; i < min_size; ++i)
             {
-                if (data1[i] < data2[i]) return -1;
-                if (data1[i] > data2[i]) return 1;
+                // Compare as unsigned char so bytes >= 0x80 order after ASCII,
+                // matching std::char_traits<char> (memcmp) semantics rather than
+                // signed-char ordering.
+                unsigned char c1 = static_cast<unsigned char>(data1[i]);
+                unsigned char c2 = static_cast<unsigned char>(data2[i]);
+                if (c1 < c2) return -1;
+                if (c1 > c2) return 1;
             }
 
             if (size_ < other.size_) return -1;
@@ -301,7 +306,9 @@ namespace mystl
 
         friend bool operator<(const String& lhs, const String& rhs) noexcept
         {
-            return mystl::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
+            // Route through compare() for unsigned-char ordering; the derived
+            // >, <=, >= operators inherit the corrected semantics.
+            return lhs.compare(rhs) < 0;
         }
 
         friend bool operator>(const String& lhs, const String& rhs) noexcept
