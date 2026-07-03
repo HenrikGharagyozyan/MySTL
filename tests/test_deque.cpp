@@ -221,3 +221,34 @@ TEST(DequeTest, CopyAndMoveConstructionWithAllocator)
     EXPECT_EQ(moved.size(), 3);
     EXPECT_EQ(moved.front(), 1);
 }
+
+// The (count, value) constructor must not be hijacked by the (InputIt, InputIt)
+// constructor when both arguments are integral.
+TEST(DequeTest, CountValueConstructionNotHijacked)
+{
+    mystl::Deque<int> d(5, 10);
+
+    EXPECT_EQ(d.size(), 5u);
+    for (std::size_t i = 0; i < d.size(); ++i)
+        EXPECT_EQ(d[i], 10);
+}
+
+TEST(DequeTest, CountValueWithNonIntegralValueType)
+{
+    // Two integral-looking args resolve to (count, value) here too.
+    mystl::Deque<char> d(3, 'z');
+    EXPECT_EQ(d.size(), 3u);
+    EXPECT_EQ(d[0], 'z');
+    EXPECT_EQ(d[2], 'z');
+}
+
+TEST(DequeTest, IteratorPairConstructionStillWorks)
+{
+    // Genuine iterator pairs (non-integral) must still select the range ctor.
+    std::vector<int> src = {7, 8, 9};
+    mystl::Deque<int> d(src.begin(), src.end());
+
+    EXPECT_EQ(d.size(), 3u);
+    EXPECT_EQ(d.front(), 7);
+    EXPECT_EQ(d.back(), 9);
+}

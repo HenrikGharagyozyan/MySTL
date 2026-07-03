@@ -308,7 +308,7 @@ namespace mystl
             }
         }
 
-        template <typename InputIt>
+        template <typename InputIt, typename = mystl::enable_if_t<!mystl::is_integral<InputIt>::value>>
         Deque(InputIt first, InputIt last, const Allocator& alloc = Allocator())
             : alloc_(alloc)
         {
