@@ -87,7 +87,8 @@ namespace mystl
         Node** allocate_buckets(size_type n)
         {
             Node** p = bucket_traits::allocate(bucket_alloc_, n);
-            for (size_type i = 0; i < n; ++i) p[i] = nullptr;
+            for (size_type i = 0; i < n; ++i) 
+                p[i] = nullptr;
             return p;
         }
 
@@ -130,8 +131,10 @@ namespace mystl
                 while (curr)
                 {
                     Node* new_node = create_node(nullptr, curr->value);
-                    if (!prev) buckets_[i] = new_node;
-                    else       prev->next  = new_node;
+                    if (!prev) 
+                        buckets_[i] = new_node;
+                    else       
+                        prev->next  = new_node;
                     prev = new_node;
                     curr = curr->next;
                     ++size_;
@@ -172,8 +175,10 @@ namespace mystl
                     while (curr)
                     {
                         Node* new_node = create_node(nullptr, mystl::move(curr->value));
-                        if (!prev) buckets_[i] = new_node;
-                        else       prev->next  = new_node;
+                        if (!prev) 
+                            buckets_[i] = new_node;
+                        else       
+                            prev->next  = new_node;
                         prev = new_node;
                         curr = curr->next;
                         ++size_;
@@ -474,7 +479,9 @@ namespace mystl
         // ====================================================================
         iterator find(const Key& key)
         {
-            if (bucket_count_ == 0) return end();
+            if (bucket_count_ == 0) 
+                return end();
+
             size_type idx  = get_bucket_index(key, bucket_count_);
             Node*     curr = buckets_[idx];
             while (curr)
@@ -488,7 +495,9 @@ namespace mystl
 
         const_iterator find(const Key& key) const
         {
-            if (bucket_count_ == 0) return cend();
+            if (bucket_count_ == 0) 
+                return cend();
+                
             size_type   idx  = get_bucket_index(key, bucket_count_);
             const Node* curr = buckets_[idx];
             while (curr)
