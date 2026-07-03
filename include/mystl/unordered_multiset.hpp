@@ -1,23 +1,29 @@
 #pragma once
 
-#include "utility.hpp"
+#include "hash_table.hpp"
 #include "functional.hpp"
 #include "allocator.hpp"
-#include "memory.hpp"
+#include "utility.hpp"
+
 #include <cstddef>
-#include <stdexcept>
 
-namespace mystl 
+namespace mystl
 {
-
+    // Thin façade over the shared HashTable backbone (multi variant), mirroring
+    // how MultiSet wraps RBTree. Equivalent keys are allowed and kept adjacent;
+    // iterators are always const to keep keys immutable.
     template <
-        typename Key, 
-        typename Hash      = mystl::hash<Key>, 
+        typename Key,
+        typename Hash      = mystl::hash<Key>,
         typename KeyEqual  = mystl::equal_to,
         typename Allocator = mystl::Allocator<Key>
     >
-    class UnorderedMultiSet 
+    class UnorderedMultiSet
     {
+    private:
+        using Table = HashTable<Key, Key, Identity<Key>, Hash, KeyEqual, Allocator>;
+        Table table_;
+
     public:
         using key_type        = Key;
         using value_type      = Key;
@@ -31,546 +37,75 @@ namespace mystl
         using pointer         = typename mystl::allocator_traits<Allocator>::pointer;
         using const_pointer   = typename mystl::allocator_traits<Allocator>::const_pointer;
 
-    private:
-        struct Node 
-        {
-            value_type value;
-            Node* next;
+        using iterator       = typename Table::const_iterator;
+        using const_iterator = typename Table::const_iterator;
 
-            template <typename... Args>
-            Node(Node* n, Args&&... args) 
-                : value(mystl::forward<Args>(args)...)
-                , next(n) 
-            {
-            }
-        };
-
-        using node_allocator_type   = typename mystl::allocator_traits<Allocator>::template rebind_alloc<Node>;
-        using node_traits           = mystl::allocator_traits<node_allocator_type>;
-        using bucket_allocator_type = typename mystl::allocator_traits<Allocator>::template rebind_alloc<Node*>;
-        using bucket_traits         = mystl::allocator_traits<bucket_allocator_type>;
-
-        Node** buckets_            = nullptr;
-        size_type bucket_count_    = 0;
-        size_type size_            = 0;
-        float     max_load_factor_ = 1.0f;
-
-        [[no_unique_address]] node_allocator_type   node_alloc_;
-        [[no_unique_address]] bucket_allocator_type bucket_alloc_;
-        [[no_unique_address]] hasher                hash_func_;
-        [[no_unique_address]] key_equal             equal_func_;
-
-        // ========================================================================
-        // PRIVATE ALLOCATION HELPERS
-        // ========================================================================
-        size_type get_bucket_index(const Key& key, size_type b_count) const 
-        {
-            return hash_func_(key) % b_count;
-        }
-
-        Node** allocate_buckets(size_type n)
-        {
-            Node** p = bucket_traits::allocate(bucket_alloc_, n);
-            for (size_type i = 0; i < n; ++i) p[i] = nullptr;
-            return p;
-        }
-
-        void deallocate_buckets(Node** p, size_type n) noexcept
-        {
-            bucket_traits::deallocate(bucket_alloc_, p, n);
-        }
-
-        template <typename... Args>
-        Node* create_node(Node* next, Args&&... args)
-        {
-            Node* p = node_traits::allocate(node_alloc_, 1);
-            try
-            {
-                node_traits::construct(node_alloc_, p, next, mystl::forward<Args>(args)...);
-            }
-            catch (...)
-            {
-                node_traits::deallocate(node_alloc_, p, 1);
-                throw;
-            }
-            return p;
-        }
-
-        void destroy_node(Node* p) noexcept
-        {
-            node_traits::destroy(node_alloc_, p);
-            node_traits::deallocate(node_alloc_, p, 1);
-        }
-
-        // Allocator-extended move helper: take over the source's storage when our
-        // allocator can free it (always-equal, or compares equal), otherwise move
-        // the elements into storage owned by our allocator so the source's memory
-        // is never released through the wrong allocator. Per-bucket order is
-        // preserved, keeping equivalent keys adjacent.
-        void adopt_or_move(UnorderedMultiSet& other)
-        {
-            bool take_ownership;
-            if constexpr (node_traits::is_always_equal::value)
-                take_ownership = true;
-            else
-                take_ownership = (node_alloc_ == other.node_alloc_);
-
-            if (take_ownership)
-            {
-                buckets_ = other.buckets_;
-                size_    = other.size_;
-                other.buckets_      = nullptr;
-                other.bucket_count_ = 0;
-                other.size_         = 0;
-                return;
-            }
-
-            buckets_ = allocate_buckets(bucket_count_);
-            try
-            {
-                for (size_type i = 0; i < other.bucket_count_; ++i)
-                {
-                    Node* curr = other.buckets_[i];
-                    Node* prev = nullptr;
-                    while (curr)
-                    {
-                        Node* new_node = create_node(nullptr, mystl::move(curr->value));
-                        if (!prev) buckets_[i] = new_node;
-                        else       prev->next  = new_node;
-                        prev = new_node;
-                        curr = curr->next;
-                        ++size_;
-                    }
-                }
-            }
-            catch (...)
-            {
-                clear();
-                deallocate_buckets(buckets_, bucket_count_);
-                buckets_ = nullptr;
-                throw;
-            }
-            other.clear();
-        }
-
-    public:
-        // ========================================================================
+        // ====================================================================
         // ITERATORS
-        // ========================================================================
-        class ConstIterator 
-        {
-            friend class UnorderedMultiSet;
-        public:
-            using iterator_category = mystl::forward_iterator_tag;
-            using value_type        = UnorderedMultiSet::value_type;
-            using difference_type   = UnorderedMultiSet::difference_type;
-            using pointer           = UnorderedMultiSet::const_pointer;
-            using reference         = UnorderedMultiSet::const_reference;
+        // ====================================================================
+        iterator       begin()  const noexcept { return table_.cbegin(); }
+        iterator       end()    const noexcept { return table_.cend(); }
+        const_iterator cbegin() const noexcept { return table_.cbegin(); }
+        const_iterator cend()   const noexcept { return table_.cend(); }
 
-        private:
-            const Node* node_;
-            size_type bucket_idx_;
-            const UnorderedMultiSet* set_;
+        // ====================================================================
+        // CONSTRUCTORS, RULE OF FIVE
+        // ====================================================================
+        UnorderedMultiSet() : table_() {}
 
-            ConstIterator(const Node* node, size_type b_idx, const UnorderedMultiSet* set)
-                : node_(node)
-                , bucket_idx_(b_idx)
-                , set_(set) 
-            {
-            }
-
-        public:
-            ConstIterator() : node_(nullptr), bucket_idx_(0), set_(nullptr) {}
-
-            const_reference   operator*()  const { return node_->value; }
-            const value_type* operator->() const { return &(node_->value); }
-
-            ConstIterator& operator++() 
-            {
-                node_ = node_->next;
-                if (!node_) 
-                {
-                    while (++bucket_idx_ < set_->bucket_count_) 
-                    {
-                        if (set_->buckets_[bucket_idx_]) 
-                        {
-                            node_ = set_->buckets_[bucket_idx_];
-                            break;
-                        }
-                    }
-                }
-                return *this;
-            }
-
-            ConstIterator operator++(int) 
-            {
-                ConstIterator tmp = *this;
-                ++(*this);
-                return tmp;
-            }
-
-            bool operator==(const ConstIterator& other) const { return node_ == other.node_; }
-            bool operator!=(const ConstIterator& other) const { return node_ != other.node_; }
-        };
-
-        using iterator       = ConstIterator;
-        using const_iterator = ConstIterator;
-
-        iterator       begin()  const noexcept { return cbegin(); }
-        iterator       end()    const noexcept { return cend(); }
-        const_iterator cbegin() const noexcept 
-        {
-            for (size_type i = 0; i < bucket_count_; ++i) 
-            {
-                if (buckets_[i]) return const_iterator(buckets_[i], i, this);
-            }
-            return cend();
-        }
-        const_iterator cend() const noexcept { return const_iterator(nullptr, bucket_count_, this); }
-
-    private:
-        iterator make_iterator_safe(const Node* node, size_type idx) const 
-        {
-            if (node) return iterator(node, idx, this);
-            for (size_type i = idx + 1; i < bucket_count_; ++i) 
-            {
-                if (buckets_[i]) return iterator(buckets_[i], i, this);
-            }
-            return end();
-        }
-
-    public:
-        // ========================================================================
-        // CONSTRUCTORS, DESTRUCTOR, RULE OF FIVE
-        // ========================================================================
-        UnorderedMultiSet() : UnorderedMultiSet(8) {}
-        
-        explicit UnorderedMultiSet(size_type bucket_count, 
-                                   const hasher&    hf  = hasher(), 
+        explicit UnorderedMultiSet(size_type bucket_count,
+                                   const hasher&    hf  = hasher(),
                                    const key_equal& eql = key_equal())
-            : bucket_count_(bucket_count)
-            , hash_func_(hf)
-            , equal_func_(eql) 
+            : table_(bucket_count, hf, eql)
         {
-            buckets_ = allocate_buckets(bucket_count_);
         }
 
-        ~UnorderedMultiSet() 
+        UnorderedMultiSet(const UnorderedMultiSet& other) : table_(other.table_) {}
+        UnorderedMultiSet(const UnorderedMultiSet& other, const allocator_type& alloc) : table_(other.table_, alloc) {}
+        UnorderedMultiSet(UnorderedMultiSet&& other) noexcept : table_(mystl::move(other.table_)) {}
+        UnorderedMultiSet(UnorderedMultiSet&& other, const allocator_type& alloc) : table_(mystl::move(other.table_), alloc) {}
+
+        UnorderedMultiSet& operator=(const UnorderedMultiSet& other)     = default;
+        UnorderedMultiSet& operator=(UnorderedMultiSet&& other) noexcept = default;
+
+        // ====================================================================
+        // CAPACITY & STATE
+        // ====================================================================
+        [[nodiscard]] bool      empty()        const noexcept { return table_.empty(); }
+        [[nodiscard]] size_type size()         const noexcept { return table_.size(); }
+        [[nodiscard]] size_type bucket_count() const noexcept { return table_.bucket_count(); }
+        [[nodiscard]] float     load_factor()  const noexcept { return table_.load_factor(); }
+        [[nodiscard]] float     max_load_factor() const noexcept { return table_.max_load_factor(); }
+        [[nodiscard]] allocator_type get_allocator() const noexcept { return table_.get_allocator(); }
+
+        void clear() noexcept { table_.clear(); }
+
+        // ====================================================================
+        // SEARCH
+        // ====================================================================
+        const_iterator find(const Key& key) const { return table_.find(key); }
+        bool           contains(const Key& key) const { return table_.contains(key); }
+        size_type      count(const Key& key) const { return table_.count(key); }
+
+        mystl::Pair<iterator, iterator> equal_range(const Key& key) const
         {
-            clear();
-            if (buckets_) deallocate_buckets(buckets_, bucket_count_);
+            return table_.equal_range(key);
         }
 
-        UnorderedMultiSet(const UnorderedMultiSet& other)
-            : bucket_count_(other.bucket_count_)
-            , max_load_factor_(other.max_load_factor_)
-            , node_alloc_(node_traits::select_on_container_copy_construction(other.node_alloc_))
-            , bucket_alloc_(bucket_traits::select_on_container_copy_construction(other.bucket_alloc_))
-            , hash_func_(other.hash_func_)
-            , equal_func_(other.equal_func_) 
-        {
-            buckets_ = allocate_buckets(bucket_count_);
-            for (size_type i = 0; i < other.bucket_count_; ++i) 
-            {
-                Node* curr = other.buckets_[i];
-                Node* prev = nullptr;
-                while (curr) 
-                {
-                    Node* new_node = create_node(nullptr, curr->value);
-                    if (!prev) buckets_[i] = new_node;
-                    else prev->next = new_node;
-                    prev = new_node;
-                    curr = curr->next;
-                    ++size_;
-                }
-            }
-        }
-
-        UnorderedMultiSet(const UnorderedMultiSet& other, const allocator_type& alloc)
-            : bucket_count_(other.bucket_count_)
-            , max_load_factor_(other.max_load_factor_)
-            , node_alloc_(alloc)
-            , hash_func_(other.hash_func_)
-            , equal_func_(other.equal_func_) 
-        {
-            buckets_ = allocate_buckets(bucket_count_);
-            for (size_type i = 0; i < other.bucket_count_; ++i) 
-            {
-                Node* curr = other.buckets_[i];
-                Node* prev = nullptr;
-                while (curr) 
-                {
-                    Node* new_node = create_node(nullptr, curr->value);
-                    if (!prev) buckets_[i] = new_node;
-                    else prev->next = new_node;
-                    prev = new_node;
-                    curr = curr->next;
-                    ++size_;
-                }
-            }
-        }
-
-        UnorderedMultiSet(UnorderedMultiSet&& other) noexcept
-            : buckets_(other.buckets_)
-            , bucket_count_(other.bucket_count_)
-            , size_(other.size_)
-            , max_load_factor_(other.max_load_factor_)
-            , node_alloc_(mystl::move(other.node_alloc_))
-            , bucket_alloc_(mystl::move(other.bucket_alloc_))
-            , hash_func_(mystl::move(other.hash_func_))
-            , equal_func_(mystl::move(other.equal_func_)) 
-        {
-            other.buckets_      = nullptr;
-            other.bucket_count_ = 0;
-            other.size_         = 0;
-        }
-
-        UnorderedMultiSet(UnorderedMultiSet&& other, const allocator_type& alloc)
-            : bucket_count_(other.bucket_count_)
-            , max_load_factor_(other.max_load_factor_)
-            , node_alloc_(alloc)
-            , bucket_alloc_(alloc)
-            , hash_func_(mystl::move(other.hash_func_))
-            , equal_func_(mystl::move(other.equal_func_))
-        {
-            adopt_or_move(other);
-        }
-
-        UnorderedMultiSet& operator=(const UnorderedMultiSet& other) 
-        {
-            if (this != &other) 
-            { 
-                UnorderedMultiSet tmp(other); 
-                swap(tmp); 
-            }
-            return *this;
-        }
-
-        UnorderedMultiSet& operator=(UnorderedMultiSet&& other) noexcept 
-        {
-            if (this != &other) 
-            {
-                clear();
-                if (buckets_) deallocate_buckets(buckets_, bucket_count_);
-
-                buckets_         = other.buckets_; 
-                bucket_count_    = other.bucket_count_; 
-                size_            = other.size_;
-                max_load_factor_ = other.max_load_factor_;
-                node_alloc_      = mystl::move(other.node_alloc_);
-                bucket_alloc_    = mystl::move(other.bucket_alloc_);
-                hash_func_       = mystl::move(other.hash_func_);
-                equal_func_      = mystl::move(other.equal_func_);
-
-                other.buckets_      = nullptr; 
-                other.bucket_count_ = 0; 
-                other.size_         = 0;
-            }
-            return *this;
-        }
-
-        // ========================================================================
-        // SIZE AND STATE
-        // ========================================================================
-        [[nodiscard]] bool      empty()        const noexcept { return size_ == 0; }
-        [[nodiscard]] size_type size()         const noexcept { return size_; }
-        [[nodiscard]] size_type bucket_count() const noexcept { return bucket_count_; }
-        
-        [[nodiscard]] float load_factor() const noexcept 
-        { 
-            return bucket_count_ == 0 ? 0.0f : static_cast<float>(size_) / bucket_count_; 
-        }
-        
-        [[nodiscard]] float          max_load_factor() const noexcept { return max_load_factor_; }
-        [[nodiscard]] allocator_type get_allocator()   const noexcept { return allocator_type(node_alloc_); }
-        
-        void clear() noexcept 
-        {
-            for (size_type i = 0; i < bucket_count_; ++i) 
-            {
-                Node* curr = buckets_[i];
-                while (curr) 
-                { 
-                    Node* next = curr->next; 
-                    destroy_node(curr); 
-                    curr = next; 
-                }
-                buckets_[i] = nullptr;
-            }
-            size_ = 0;
-        }
-
-        // ========================================================================
-        // SEARCH, COUNT AND EQUAL_RANGE
-        // ========================================================================
-        const_iterator find(const Key& key) const 
-        {
-            if (bucket_count_ == 0) return cend();
-            size_type idx = get_bucket_index(key, bucket_count_);
-            const Node* curr = buckets_[idx];
-            while (curr) 
-            {
-                if (equal_func_(curr->value, key)) return const_iterator(curr, idx, this);
-                curr = curr->next;
-            }
-            return cend();
-        }
-
-        bool contains(const Key& key) const { return find(key) != cend(); }
-
-        size_type count(const Key& key) const 
-        {
-            if (bucket_count_ == 0) return 0;
-            size_type idx = get_bucket_index(key, bucket_count_);
-            const Node* curr = buckets_[idx];
-            size_type cnt = 0;
-            while (curr) 
-            {
-                if (equal_func_(curr->value, key)) 
-                    cnt++;
-                else if (cnt > 0) 
-                    break; 
-                curr = curr->next;
-            }
-            return cnt;
-        }
-
-        mystl::Pair<iterator, iterator> equal_range(const Key& key) const 
-        {
-            if (bucket_count_ == 0) return { cend(), cend() };
-            size_type idx = get_bucket_index(key, bucket_count_);
-            const Node* curr = buckets_[idx];
-
-            while (curr) 
-            {
-                if (equal_func_(curr->value, key)) 
-                {
-                    const Node* first = curr;
-                    while (curr && equal_func_(curr->value, key)) curr = curr->next;
-                    return { iterator(first, idx, this), make_iterator_safe(curr, idx) };
-                }
-                curr = curr->next;
-            }
-            return { cend(), cend() };
-        }
-
-        // ========================================================================
+        // ====================================================================
         // MODIFIERS
-        // ========================================================================
-        void rehash(size_type new_count) 
-        {
-            if (new_count <= bucket_count_) return;
-            
-            Node** new_buckets = allocate_buckets(new_count);
-            
-            for (size_type i = 0; i < bucket_count_; ++i) 
-            {
-                Node* curr = buckets_[i];
-                while (curr) 
-                {
-                    Node* next_node = curr->next;
-                    size_type new_idx = get_bucket_index(curr->value, new_count);
-                    curr->next = new_buckets[new_idx];
-                    new_buckets[new_idx] = curr;
-                    curr = next_node;
-                }
-            }
-            
-            if (buckets_) deallocate_buckets(buckets_, bucket_count_);
-            buckets_ = new_buckets;
-            bucket_count_ = new_count;
-        }
+        // ====================================================================
+        void rehash(size_type new_count) { table_.rehash(new_count); }
 
         template <typename... Args>
-        iterator emplace(Args&&... args) 
-        {
-            // Проверяем load factor и рехешируем ДО создания узла для безопасности исключений
-            if (load_factor() + 1.0f / (bucket_count_ == 0 ? 1 : bucket_count_) > max_load_factor_) 
-                rehash(bucket_count_ == 0 ? 8 : bucket_count_ * 2);
+        iterator emplace(Args&&... args) { return table_.emplace_multi(mystl::forward<Args>(args)...); }
 
-            Node* new_node = create_node(nullptr, mystl::forward<Args>(args)...);
-            const Key& key = new_node->value;
-            size_type idx = get_bucket_index(key, bucket_count_);
-            
-            Node* curr = buckets_[idx];
-            bool inserted = false;
-            
-            if (curr && equal_func_(curr->value, key)) 
-            {
-                new_node->next = curr->next;
-                curr->next = new_node;
-                inserted = true;
-            } 
-            else 
-            {
-                while (curr && curr->next) 
-                {
-                    if (equal_func_(curr->next->value, key)) 
-                    {
-                        new_node->next = curr->next->next;
-                        curr->next->next = new_node;
-                        inserted = true;
-                        break;
-                    }
-                    curr = curr->next;
-                }
-            }
+        iterator insert(const value_type& value) { return table_.emplace_multi(value); }
+        iterator insert(value_type&& value)      { return table_.emplace_multi(mystl::move(value)); }
 
-            if (!inserted) 
-            {
-                new_node->next = buckets_[idx];
-                buckets_[idx] = new_node;
-            }
+        size_type erase(const Key& key) { return table_.erase(key); }
 
-            ++size_;
-            return iterator(new_node, idx, this);
-        }
-
-        iterator insert(const value_type& value) { return emplace(value); }
-        iterator insert(value_type&& value)      { return emplace(mystl::move(value)); }
-
-        size_type erase(const Key& key) 
-        {
-            if (bucket_count_ == 0) return 0;
-            size_type idx = get_bucket_index(key, bucket_count_);
-            Node* curr = buckets_[idx];
-            Node* prev = nullptr;
-            size_type erased_count = 0;
-
-            while (curr) 
-            {
-                if (equal_func_(curr->value, key)) 
-                {
-                    Node* to_delete = curr;
-                    if (!prev) buckets_[idx] = curr->next;
-                    else prev->next = curr->next;
-                    
-                    curr = curr->next;
-                    destroy_node(to_delete);
-                    --size_;
-                    ++erased_count;
-                } 
-                else 
-                {
-                    if (erased_count > 0) break;
-                    prev = curr;
-                    curr = curr->next;
-                }
-            }
-            return erased_count;
-        }
-
-        void swap(UnorderedMultiSet& other) noexcept 
-        {
-            mystl::swap(buckets_,         other.buckets_);
-            mystl::swap(bucket_count_,    other.bucket_count_);
-            mystl::swap(size_,            other.size_);
-            mystl::swap(max_load_factor_, other.max_load_factor_);
-            mystl::swap(node_alloc_,      other.node_alloc_);
-            mystl::swap(bucket_alloc_,    other.bucket_alloc_);
-            mystl::swap(hash_func_,       other.hash_func_);
-            mystl::swap(equal_func_,      other.equal_func_);
-        }
+        void swap(UnorderedMultiSet& other) noexcept { table_.swap(other.table_); }
     };
 
 } // namespace mystl
