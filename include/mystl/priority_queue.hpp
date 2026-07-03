@@ -6,9 +6,7 @@
 #include "vector.hpp"     // Default internal container
 #include "type_traits.hpp"// Metaprogramming without std::
 
-#include <cassert>
-
-namespace mystl 
+namespace mystl
 {
     // NOTE: mystl::less no longer takes <T> because it is a transparent functor (C++14)
     template <typename T, typename Container = mystl::Vector<T>, typename Compare = mystl::less>
@@ -115,9 +113,11 @@ namespace mystl
         // ACCESS AND SIZE
         // ========================================================================
 
-        [[nodiscard]] const_reference top() const 
+        // Precondition: !empty(). Calling top() on an empty queue is undefined
+        // behavior, consistent with std::priority_queue and the other unchecked
+        // accessors in this library (Vector::front, Deque::front, Stack::top).
+        [[nodiscard]] const_reference top() const
         {
-            assert(!empty() && "PriorityQueue is empty!");
             return c_.front();
         }
 
@@ -148,9 +148,10 @@ namespace mystl
             mystl::push_heap(c_.begin(), c_.end(), comp_);
         }
 
-        void pop() 
+        // Precondition: !empty(). Calling pop() on an empty queue is undefined
+        // behavior, consistent with std::priority_queue.
+        void pop()
         {
-            assert(!empty() && "PriorityQueue is empty!");
             mystl::pop_heap(c_.begin(), c_.end(), comp_);
             c_.pop_back();
         }
