@@ -81,3 +81,7 @@ gtest_discover_tests(test_allocator)
 add_executable(test_hash_table test_hash_table.cpp)
 target_link_libraries(test_hash_table PRIVATE mystl GTest::gtest_main)
 gtest_discover_tests(test_hash_table)
+
+add_executable(test_type_traits test_type_traits.cpp)
+target_link_libraries(test_type_traits PRIVATE mystl GTest::gtest_main)
+gtest_discover_tests(test_type_traits)
