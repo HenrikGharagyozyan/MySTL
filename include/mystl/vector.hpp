@@ -52,20 +52,36 @@ namespace mystl
         explicit Vector(size_type count, const T& value = T(), const Allocator& alloc = Allocator())
             : size_(count), capacity_(count), alloc_(alloc) 
         {
-            if (count > 0) 
+            if (count > 0)
             {
                 data_ = allocator_traits_type::allocate(alloc_, capacity_);
-                mystl::uninitialized_fill(data_, data_ + size_, value);
+                try
+                {
+                    mystl::uninitialized_fill(data_, data_ + size_, value);
+                }
+                catch (...)
+                {
+                    allocator_traits_type::deallocate(alloc_, data_, capacity_);
+                    throw;
+                }
             }
         }
 
         Vector(std::initializer_list<T> init, const Allocator& alloc = Allocator())
             : size_(init.size()), capacity_(init.size()), alloc_(alloc) 
         {
-            if (size_ > 0) 
+            if (size_ > 0)
             {
                 data_ = allocator_traits_type::allocate(alloc_, capacity_);
-                mystl::uninitialized_copy(init.begin(), init.end(), data_);
+                try
+                {
+                    mystl::uninitialized_copy(init.begin(), init.end(), data_);
+                }
+                catch (...)
+                {
+                    allocator_traits_type::deallocate(alloc_, data_, capacity_);
+                    throw;
+                }
             }
         }
 
@@ -78,7 +94,15 @@ namespace mystl
             {
                 capacity_ = size_ = count;
                 data_ = allocator_traits_type::allocate(alloc_, capacity_);
-                mystl::uninitialized_copy(first, last, data_);
+                try
+                {
+                    mystl::uninitialized_copy(first, last, data_);
+                }
+                catch (...)
+                {
+                    allocator_traits_type::deallocate(alloc_, data_, capacity_);
+                    throw;
+                }
             }
         }
 
@@ -89,10 +113,18 @@ namespace mystl
             : size_(other.size_), capacity_(other.size_)
             , alloc_(allocator_traits_type::select_on_container_copy_construction(other.alloc_))
         {
-            if (capacity_ > 0) 
+            if (capacity_ > 0)
             {
                 data_ = allocator_traits_type::allocate(alloc_, capacity_);
-                mystl::uninitialized_copy(other.data_, other.data_ + other.size_, data_);
+                try
+                {
+                    mystl::uninitialized_copy(other.data_, other.data_ + other.size_, data_);
+                }
+                catch (...)
+                {
+                    allocator_traits_type::deallocate(alloc_, data_, capacity_);
+                    throw;
+                }
             }
         }
 
@@ -103,7 +135,15 @@ namespace mystl
             {
                 capacity_ = size_ = other.size_;
                 data_ = allocator_traits_type::allocate(alloc_, capacity_);
-                mystl::uninitialized_copy(other.begin(), other.end(), data_);
+                try
+                {
+                    mystl::uninitialized_copy(other.begin(), other.end(), data_);
+                }
+                catch (...)
+                {
+                    allocator_traits_type::deallocate(alloc_, data_, capacity_);
+                    throw;
+                }
             }
         }
 

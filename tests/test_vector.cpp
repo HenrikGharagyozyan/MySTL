@@ -329,3 +329,60 @@ TEST(VectorTest, ReallocationLeaksNothingOnThrow)
     // rolled back) must have been destroyed: no leak, no double-free.
     EXPECT_EQ(ThrowOnCopy::live_instances, 0);
 }
+
+TEST(VectorTest, CopyCtorLeaksNothingOnThrow)
+{
+    ThrowOnCopy::live_instances    = 0;
+    ThrowOnCopy::copies_until_throw = -1;
+
+    {
+        mystl::Vector<ThrowOnCopy> src;
+        src.reserve(4);
+        src.emplace_back(1);
+        src.emplace_back(2);
+        src.emplace_back(3);
+
+        ThrowOnCopy::copies_until_throw = 1; // 2nd element copy throws
+
+        bool threw = false;
+        try
+        {
+            mystl::Vector<ThrowOnCopy> dst(src); // copy constructor
+        }
+        catch (const std::runtime_error&)
+        {
+            threw = true;
+        }
+        EXPECT_TRUE(threw);
+        ThrowOnCopy::copies_until_throw = -1;
+
+        EXPECT_EQ(src.size(), 3u); // source untouched
+    }
+    // dst's allocated buffer and its partially-copied elements were all released.
+    EXPECT_EQ(ThrowOnCopy::live_instances, 0);
+}
+
+TEST(VectorTest, FillCtorLeaksNothingOnThrow)
+{
+    ThrowOnCopy::live_instances    = 0;
+    ThrowOnCopy::copies_until_throw = -1;
+
+    ThrowOnCopy proto(7); // one live instance
+
+    ThrowOnCopy::copies_until_throw = 2; // 3rd fill copy throws
+
+    bool threw = false;
+    try
+    {
+        mystl::Vector<ThrowOnCopy> v(5, proto); // fill constructor
+    }
+    catch (const std::runtime_error&)
+    {
+        threw = true;
+    }
+    EXPECT_TRUE(threw);
+    ThrowOnCopy::copies_until_throw = -1;
+
+    // Only proto remains alive; the fill buffer and its copies were released.
+    EXPECT_EQ(ThrowOnCopy::live_instances, 1);
+}
