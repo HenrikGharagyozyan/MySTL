@@ -73,3 +73,11 @@ gtest_discover_tests(test_multimap)
 add_executable(test_algorithm test_algorithm.cpp)
 target_link_libraries(test_algorithm PRIVATE mystl GTest::gtest_main)
 gtest_discover_tests(test_algorithm)
+
+add_executable(test_allocator test_allocator.cpp)
+target_link_libraries(test_allocator PRIVATE mystl GTest::gtest_main)
+gtest_discover_tests(test_allocator)
+
+add_executable(test_hash_table test_hash_table.cpp)
+target_link_libraries(test_hash_table PRIVATE mystl GTest::gtest_main)
+gtest_discover_tests(test_hash_table)
