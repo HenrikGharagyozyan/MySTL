@@ -176,8 +176,16 @@ namespace mystl
     template <typename T>
     inline constexpr bool is_trivially_move_assignable_v = __is_trivially_assignable(T&, T&&);
 
+#if defined(__clang__) || defined(_MSC_VER)
+    // Clang / MSVC provide the standard-semantics intrinsic directly.
+    template <typename T>
+    inline constexpr bool is_trivially_destructible_v = __is_trivially_destructible(T);
+#else
+    // GCC exposes only the legacy spelling (it has no __is_trivially_destructible
+    // builtin); it yields the same result for all destructible types.
     template <typename T>
     inline constexpr bool is_trivially_destructible_v = __has_trivial_destructor(T);
+#endif
 
     template <typename T>
     inline constexpr bool is_copy_constructible_v = __is_constructible(T, const T&);

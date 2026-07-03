@@ -5,6 +5,8 @@
 
 #include <cstddef>
 #include <new>
+#include <string>
+
 
 // ============================================================================
 // STATELESS DEFAULT ALLOCATOR (mystl::Allocator)
