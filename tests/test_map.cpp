@@ -81,3 +81,26 @@ TEST(MapTest, Erase)
     EXPECT_FALSE(m.contains("B"));
     EXPECT_EQ(m.erase("Z"), 0); // Deletion of non-existent
 }
+TEST(MapTest, HeterogeneousIteratorComparison)
+{
+    mystl::Map<int, int> m = {{1, 10}, {2, 20}, {3, 30}};
+
+    mystl::Map<int, int>::iterator       it  = m.begin();
+    mystl::Map<int, int>::const_iterator cit = m.cbegin();
+
+    // Both orders must compile and agree (member operator== broke one order).
+    EXPECT_TRUE(it == cit);
+    EXPECT_TRUE(cit == it);
+    EXPECT_FALSE(it != cit);
+    EXPECT_FALSE(cit != it);
+
+    // Mixed comparison against a stored const end() while advancing a mutable it.
+    int visited = 0;
+    for (mystl::Map<int, int>::iterator i = m.begin(); i != m.cend(); ++i)
+        ++visited;
+    EXPECT_EQ(visited, 3);
+
+    ++it;
+    EXPECT_TRUE(it != cit);
+    EXPECT_TRUE(cit != it);
+}

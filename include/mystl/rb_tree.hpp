@@ -328,14 +328,24 @@ namespace mystl
             return tmp;
         }
 
-        bool operator==(const RBTreeIterator& other) const noexcept { 
-            return node == other.node && nil == other.nil; 
-        }
-        
-        bool operator!=(const RBTreeIterator& other) const noexcept { 
-            return !(*this == other); 
-        }
     };
+
+    // Non-member, heterogeneous comparisons so that a mutable iterator and a
+    // const_iterator (which differ only in Pointer/Reference) compare in either
+    // order — a member operator== could not convert its left-hand operand.
+    template <typename V, typename P1, typename R1, typename P2, typename R2>
+    inline bool operator==(const RBTreeIterator<V, P1, R1>& lhs,
+                           const RBTreeIterator<V, P2, R2>& rhs) noexcept
+    {
+        return lhs.node == rhs.node && lhs.nil == rhs.nil;
+    }
+
+    template <typename V, typename P1, typename R1, typename P2, typename R2>
+    inline bool operator!=(const RBTreeIterator<V, P1, R1>& lhs,
+                           const RBTreeIterator<V, P2, R2>& rhs) noexcept
+    {
+        return !(lhs == rhs);
+    }
 
     // ============================================================================
     // RED-BLACK TREE
