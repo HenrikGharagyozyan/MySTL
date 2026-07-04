@@ -26,7 +26,7 @@ namespace mystl
         using key_type        = Key;
         using mapped_type     = T;
         using value_type      = mystl::Pair<const Key, T>;
-        using size_type       = std::size_t;
+        using size_type       = typename mystl::allocator_traits<Allocator>::size_type;
         using difference_type = std::ptrdiff_t;
         using hasher          = Hash;
         using key_equal       = KeyEqual;

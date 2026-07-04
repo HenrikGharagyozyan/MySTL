@@ -363,7 +363,7 @@ namespace mystl
     public:
         using key_type               = Key;
         using value_type             = Value;
-        using size_type              = std::size_t;
+        using size_type              = typename mystl::allocator_traits<Allocator>::size_type;
         using difference_type        = std::ptrdiff_t;
         using allocator_type         = Allocator;
         using reference              = value_type&;

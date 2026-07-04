@@ -35,7 +35,7 @@ namespace mystl
         using const_reference        = const value_type&;
         using pointer                = typename mystl::allocator_traits<Allocator>::pointer;
         using const_pointer          = typename mystl::allocator_traits<Allocator>::const_pointer;
-        using size_type              = std::size_t;
+        using size_type              = typename Tree::size_type;
         using difference_type        = std::ptrdiff_t;
 
         // Prevent key mutation by forcing all iterators to be const
