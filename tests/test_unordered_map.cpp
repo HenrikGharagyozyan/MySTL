@@ -201,3 +201,25 @@ TEST(UnorderedMapAllocTest, AllocExtendedMoveMovesElementsWithUnequalAllocator)
     EXPECT_EQ(AllocLedger::outstanding[2], 0);
     EXPECT_EQ(AllocLedger::total(), 0);
 }
+TEST(UnorderedMapTest, HeterogeneousIteratorComparison)
+{
+    UnorderedMap<int, int> m;
+    m[1] = 10;
+    m[2] = 20;
+    m[3] = 30;
+
+    UnorderedMap<int, int>::iterator       it  = m.begin();
+    UnorderedMap<int, int>::const_iterator cit = m.cbegin();
+
+    // Both operand orders must compile and agree.
+    EXPECT_TRUE(it == cit);
+    EXPECT_TRUE(cit == it);
+    EXPECT_FALSE(it != cit);
+    EXPECT_FALSE(cit != it);
+
+    // Mutable iterator compared against a stored const end() while iterating.
+    int visited = 0;
+    for (UnorderedMap<int, int>::iterator i = m.begin(); i != m.cend(); ++i)
+        ++visited;
+    EXPECT_EQ(visited, 3);
+}
