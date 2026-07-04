@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "mystl/utility.hpp"
+#include "mystl/pair.hpp"
 #include <string>
 
 // Test Move semantics

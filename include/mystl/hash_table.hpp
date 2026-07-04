@@ -4,6 +4,7 @@
 #include "functional.hpp"
 #include "allocator.hpp"
 #include "memory.hpp"
+#include "pair.hpp"
 
 #include <cstddef>
 

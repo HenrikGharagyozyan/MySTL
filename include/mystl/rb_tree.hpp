@@ -8,6 +8,7 @@
 #include "algorithm.hpp"
 #include "utility.hpp"
 #include "functional.hpp"
+#include "pair.hpp"
 
 namespace mystl 
 {
