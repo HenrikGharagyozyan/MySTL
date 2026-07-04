@@ -2,6 +2,8 @@
 
 #include <cstddef>
 
+#include "type_traits.hpp"
+
 namespace mystl
 {
     // ========================================================================
@@ -39,15 +41,32 @@ namespace mystl
     // ITERATOR TRAITS
     // ========================================================================
 
-    template <typename Iterator>
-    struct iterator_traits
+    namespace detail
     {
-        using difference_type   = typename Iterator::difference_type;
-        using value_type        = typename Iterator::value_type;
-        using pointer           = typename Iterator::pointer;
-        using reference         = typename Iterator::reference;
-        using iterator_category = typename Iterator::iterator_category;
-    };
+        // Defines the five member typedefs only when the iterator provides all of
+        // them; otherwise stays empty, making iterator_traits SFINAE-friendly for
+        // non-iterator types (matching C++17 std::iterator_traits).
+        template <typename It, typename = void>
+        struct iterator_traits_base {};
+
+        template <typename It>
+        struct iterator_traits_base<It, mystl::void_t<
+            typename It::iterator_category,
+            typename It::value_type,
+            typename It::difference_type,
+            typename It::pointer,
+            typename It::reference>>
+        {
+            using difference_type   = typename It::difference_type;
+            using value_type        = typename It::value_type;
+            using pointer           = typename It::pointer;
+            using reference         = typename It::reference;
+            using iterator_category = typename It::iterator_category;
+        };
+    }
+
+    template <typename Iterator>
+    struct iterator_traits : detail::iterator_traits_base<Iterator> {};
 
     template <typename T>
     struct iterator_traits<T*>
