@@ -199,42 +199,33 @@ namespace mystl
         // ====================================================================
         // ITERATORS
         // ====================================================================
-        // Single iterator template: mutable and const differ only in NodePtr /
-        // Reference / Pointer. Matches the RBTreeIterator / ListIterator design so
-        // heterogeneous comparison works in either operand order.
-        template <typename NodePtr, typename Ref, typename Ptr>
-        class HashIterator
+        class Iterator
         {
+            friend class HashTable;
         public:
             using iterator_category = mystl::forward_iterator_tag;
             using value_type        = HashTable::value_type;
             using difference_type   = HashTable::difference_type;
-            using pointer           = Ptr;
-            using reference         = Ref;
+            using pointer           = HashTable::pointer;
+            using reference         = HashTable::reference;
 
-            NodePtr          node_;
+        private:
+            Node*            node_;
             size_type        bucket_idx_;
             const HashTable* table_;
 
-            HashIterator() : node_(nullptr), bucket_idx_(0), table_(nullptr) {}
-
-            HashIterator(NodePtr node, size_type b_idx, const HashTable* table)
+            Iterator(Node* node, size_type b_idx, const HashTable* table)
                 : node_(node), bucket_idx_(b_idx), table_(table)
             {
             }
 
-            // Allow iterator -> const_iterator (never the reverse): the parameter
-            // names the mutable instantiation specifically.
-            template <typename Dummy = void>
-            HashIterator(const HashIterator<Node*, HashTable::reference, HashTable::pointer>& other)
-                : node_(other.node_), bucket_idx_(other.bucket_idx_), table_(other.table_)
-            {
-            }
+        public:
+            Iterator() : node_(nullptr), bucket_idx_(0), table_(nullptr) {}
 
             reference operator*()  const { return node_->value; }
             pointer   operator->() const { return &(node_->value); }
 
-            HashIterator& operator++()
+            Iterator& operator++()
             {
                 node_ = node_->next;
                 if (!node_)
@@ -251,33 +242,72 @@ namespace mystl
                 return *this;
             }
 
-            HashIterator operator++(int) { HashIterator tmp = *this; ++(*this); return tmp; }
+            Iterator operator++(int) { Iterator tmp = *this; ++(*this); return tmp; }
+            bool operator==(const Iterator& other) const { return node_ == other.node_; }
+            bool operator!=(const Iterator& other) const { return node_ != other.node_; }
         };
 
-        using iterator       = HashIterator<Node*, reference, pointer>;
-        using const_iterator = HashIterator<const Node*, const_reference, const_pointer>;
+        class ConstIterator
+        {
+            friend class HashTable;
+        public:
+            using iterator_category = mystl::forward_iterator_tag;
+            using value_type        = HashTable::value_type;
+            using difference_type   = HashTable::difference_type;
+            using pointer           = HashTable::const_pointer;
+            using reference         = HashTable::const_reference;
 
-        // Heterogeneous, order-independent comparison. Declared as hidden friends of
-        // HashTable (an associated class of both iterator kinds) so ADL finds them
-        // for every operand combination; a mutable operand converts to const_iterator.
-        friend bool operator==(const const_iterator& a, const const_iterator& b) noexcept
-        {
-            return a.node_ == b.node_;
-        }
-        friend bool operator!=(const const_iterator& a, const const_iterator& b) noexcept
-        {
-            return a.node_ != b.node_;
-        }
+        private:
+            const Node*      node_;
+            size_type        bucket_idx_;
+            const HashTable* table_;
+
+            ConstIterator(const Node* node, size_type b_idx, const HashTable* table)
+                : node_(node), bucket_idx_(b_idx), table_(table)
+            {
+            }
+
+        public:
+            ConstIterator() : node_(nullptr), bucket_idx_(0), table_(nullptr) {}
+            ConstIterator(const Iterator& it)
+                : node_(it.node_), bucket_idx_(it.bucket_idx_), table_(it.table_)
+            {
+            }
+
+            const_reference operator*()  const { return node_->value; }
+            const_pointer   operator->() const { return &(node_->value); }
+
+            ConstIterator& operator++()
+            {
+                node_ = node_->next;
+                if (!node_)
+                {
+                    while (++bucket_idx_ < table_->bucket_count_)
+                    {
+                        if (table_->buckets_[bucket_idx_])
+                        {
+                            node_ = table_->buckets_[bucket_idx_];
+                            break;
+                        }
+                    }
+                }
+                return *this;
+            }
+
+            ConstIterator operator++(int) { ConstIterator tmp = *this; ++(*this); return tmp; }
+            bool operator==(const ConstIterator& other) const { return node_ == other.node_; }
+            bool operator!=(const ConstIterator& other) const { return node_ != other.node_; }
+        };
+
+        using iterator       = Iterator;
+        using const_iterator = ConstIterator;
 
     private:
         iterator make_iterator_safe(Node* node, size_type idx)
         {
             if (node) return iterator(node, idx, this);
             for (size_type i = idx + 1; i < bucket_count_; ++i)
-            {
-                if (buckets_[i]) 
-                    return iterator(buckets_[i], i, this);
-            }
+                if (buckets_[i]) return iterator(buckets_[i], i, this);
             return end();
         }
 
@@ -285,10 +315,7 @@ namespace mystl
         {
             if (node) return const_iterator(node, idx, this);
             for (size_type i = idx + 1; i < bucket_count_; ++i)
-            {
-                if (buckets_[i]) 
-                    return const_iterator(buckets_[i], i, this);
-            }
+                if (buckets_[i]) return const_iterator(buckets_[i], i, this);
             return cend();
         }
 
@@ -296,10 +323,7 @@ namespace mystl
         iterator begin() noexcept
         {
             for (size_type i = 0; i < bucket_count_; ++i)
-            {
-                if (buckets_[i]) 
-                    return iterator(buckets_[i], i, this);
-            }
+                if (buckets_[i]) return iterator(buckets_[i], i, this);
             return end();
         }
         iterator end() noexcept { return iterator(nullptr, bucket_count_, this); }
@@ -310,10 +334,7 @@ namespace mystl
         const_iterator cbegin() const noexcept
         {
             for (size_type i = 0; i < bucket_count_; ++i)
-            {
-                if (buckets_[i]) 
-                    return const_iterator(buckets_[i], i, this);
-            }
+                if (buckets_[i]) return const_iterator(buckets_[i], i, this);
             return cend();
         }
         const_iterator cend() const noexcept { return const_iterator(nullptr, bucket_count_, this); }
