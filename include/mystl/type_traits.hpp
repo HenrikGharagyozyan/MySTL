@@ -154,6 +154,11 @@ namespace mystl
     // SFINAE & CONDITIONAL
     // ========================================================================
 
+    // Maps any well-formed sequence of types to void; the detection idiom's
+    // building block (equivalent to std::void_t).
+    template <typename...>
+    using void_t = void;
+
     template <bool B, typename T = void> struct enable_if {};
     template <typename T> struct enable_if<true, T> { using type = T; };
 
