@@ -20,8 +20,8 @@ namespace mystl
     // ========================================================================
     // BIDIRECTIONAL DEQUE ITERATOR
     // ========================================================================
-    template <typename T, typename Reference, typename Pointer>
-    struct DequeIterator 
+    template <typename T, typename Pointer, typename Reference>
+    struct DequeIterator
     {
         using iterator_category = mystl::random_access_iterator_tag;
         using value_type        = T;
@@ -48,12 +48,12 @@ namespace mystl
         DequeIterator(T* x, map_pointer y) noexcept : cur(x), first(*y), last(*y + buffer_size()), node(y) {}
 
         // Conversion from non-const to const iterator
-        template <typename NonConstRef, typename NonConstPtr>
-        DequeIterator(const DequeIterator<T, NonConstRef, NonConstPtr>& other) noexcept
+        template <typename P2, typename R2>
+        DequeIterator(const DequeIterator<T, P2, R2>& other) noexcept
             : cur(other.cur)
             , first(other.first)
             , last(other.last)
-            , node(other.node) 
+            , node(other.node)
         {
         }
 
@@ -159,8 +159,8 @@ namespace mystl
         using pointer                = T*;
         using const_pointer          = const T*;
         
-        using iterator               = DequeIterator<T, T&, T*>;
-        using const_iterator         = DequeIterator<T, const T&, const T*>;
+        using iterator               = DequeIterator<T, T*, T&>;
+        using const_iterator         = DequeIterator<T, const T*, const T&>;
         using reverse_iterator       = mystl::reverse_iterator<iterator>;
         using const_reverse_iterator = mystl::reverse_iterator<const_iterator>;
 
