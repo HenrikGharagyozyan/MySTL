@@ -18,7 +18,7 @@ TEST(TupleTest, MakeTupleAndDecay)
     int x = 10;
     auto t = mystl::make_tuple(x, 5.5, "world");
     
-    // Проверка decay (const char[] -> const char*)
+    // Verify decay (const char[] -> const char*)
     static_assert(std::is_same_v<tuple_element_t<2, decltype(t)>, const char*>);
     
     EXPECT_EQ(mystl::get<0>(t), 10);
@@ -43,11 +43,11 @@ TEST(TupleTest, RelationalOperators)
     auto t2 = mystl::make_tuple(1, 2, 4);
     auto t3 = mystl::make_tuple(2, 0, 0);
 
-    // Сравнение последнего элемента
+    // Comparison of the last element
     EXPECT_TRUE(t1 < t2);
     EXPECT_TRUE(t2 > t1);
     
-    // Сравнение первого элемента
+    // Comparison of the first element
     EXPECT_TRUE(t2 < t3);
     
     EXPECT_TRUE(t1 <= t2);

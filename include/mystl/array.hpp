@@ -2,8 +2,8 @@
 
 #include "type_traits.hpp"
 #include "utility.hpp"
-#include <cstddef>    // Для std::size_t
-#include <stdexcept>  // Для std::out_of_range
+#include <cstddef>    // For std::size_t
+#include <stdexcept>  // For std::out_of_range
 
 namespace mystl
 {
@@ -106,10 +106,10 @@ namespace mystl
 
 
     // ========================================================================
-    // Интеграция с Tuple (Structured Bindings)
+    // Integration with Tuple (Structured Bindings)
     // ========================================================================
 
-    // Специализация get<I> для array
+    // Specialization of get<I> for array
     template <std::size_t I, typename T, std::size_t N>
     constexpr T& get(array<T, N>& a) noexcept
     {
@@ -138,20 +138,43 @@ namespace mystl
         return mystl::move(a.elements[I]);
     }
 
-    // Предварительные объявления из tuple.hpp
+    // Forward declarations from tuple.hpp
     template <typename TupleType> struct tuple_size;
     template <std::size_t I, typename TupleType> struct tuple_element;
 
-    // Специализация tuple_size для array
+    // Specialization of tuple_size for array
     template <typename T, std::size_t N>
     struct tuple_size<array<T, N>> : integral_constant<std::size_t, N> {};
 
-    // Специализация tuple_element для array
+    // Specialization of tuple_element for array
     template <std::size_t I, typename T, std::size_t N>
     struct tuple_element<I, array<T, N>>
     {
         static_assert(I < N, "mystl::tuple_element: index out of bounds");
         using type = T;
     };
-    
+
 } // namespace mystl
+
+
+// ========================================================================
+// Injection into namespace std (C++ standard requirement)
+// ========================================================================
+namespace std
+{
+    // Forward declaration of standard structures (in case <utility> is not included)
+    template <typename T> struct tuple_size;
+    template <size_t I, typename T> struct tuple_element;
+
+    // Specialization of tuple_size for mystl::array
+    template <typename T, size_t N>
+    struct tuple_size<mystl::array<T, N>> : mystl::integral_constant<size_t, N> {};
+
+    // Specialization of tuple_element for mystl::array
+    template <size_t I, typename T, size_t N>
+    struct tuple_element<I, mystl::array<T, N>>
+    {
+        static_assert(I < N, "std::tuple_element: index out of bounds");
+        using type = T;
+    };
+}

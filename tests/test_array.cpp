@@ -21,10 +21,10 @@ TEST(ArrayTest, ElementAccess)
     EXPECT_EQ(arr.front(), 10);
     EXPECT_EQ(arr.back(), 40);
     
-    // Проверка генерации исключения std::out_of_range
+    // Verify that std::out_of_range is thrown
     EXPECT_THROW(arr.at(4), std::out_of_range);
-    
-    // Модификация через data()
+
+    // Modification via data()
     int* ptr = arr.data();
     ptr[0] = 99;
     EXPECT_EQ(arr.front(), 99);
@@ -40,7 +40,7 @@ TEST(ArrayTest, Iterators)
     }
     EXPECT_EQ(sum, 6);
     
-    // Range-based for loop (работает благодаря begin/end)
+    // Range-based for loop (works thanks to begin/end)
     sum = 0;
     for (const auto& val : arr) {
         sum += val;
@@ -95,7 +95,7 @@ TEST(ArrayTest, StructuredBindings)
     EXPECT_EQ(y, 200);
     EXPECT_EQ(z, 300);
     
-    // Проверка ссылок
+    // Verify references
     auto& [rx, ry, rz] = arr;
     rx = 999;
     EXPECT_EQ(arr[0], 999);
