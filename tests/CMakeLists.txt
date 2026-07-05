@@ -93,3 +93,7 @@ gtest_discover_tests(test_pair)
 add_executable(test_tuple test_tuple.cpp)
 target_link_libraries(test_tuple PRIVATE mystl GTest::gtest_main)
 gtest_discover_tests(test_tuple)
+
+add_executable(test_array test_array.cpp)
+target_link_libraries(test_array PRIVATE mystl GTest::gtest_main)
+gtest_discover_tests(test_array)
