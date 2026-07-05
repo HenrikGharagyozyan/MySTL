@@ -199,9 +199,22 @@ namespace mystl
     inline constexpr bool is_move_constructible_v = __is_constructible(T, T&&);
 
     template <typename T>
+    inline constexpr bool is_empty_v = __is_empty(T);
+
+    // Проверяет, можно ли создать объект типа T из аргументов Args
+    template <typename T, typename... Args>
+    inline constexpr bool is_constructible_v = __is_constructible(T, Args...);
+
+    // Проверяет, можно ли создать объект без выброса исключений (noexcept)
+    template <typename T, typename... Args>
+    inline constexpr bool is_nothrow_constructible_v = __is_nothrow_constructible(T, Args...);
+
+    // Можно ли переместить объект без исключений
+    template <typename T>
     inline constexpr bool is_nothrow_move_constructible_v = __is_nothrow_constructible(T, T&&);
 
+    // Можно ли присвоить объект (перемещением) без исключений
     template <typename T>
-    inline constexpr bool is_empty_v = __is_empty(T);
+    inline constexpr bool is_nothrow_move_assignable_v = __is_nothrow_assignable(T&, T&&);
 
 } // namespace mystl
