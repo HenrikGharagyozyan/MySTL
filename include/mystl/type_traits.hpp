@@ -154,6 +154,13 @@ namespace mystl
     // SFINAE & CONDITIONAL
     // ========================================================================
 
+    namespace detail 
+    {
+        // Maps any well-formed sequence of types to void; the detection idiom's
+        // building block (equivalent to std::void_t).
+        template <typename... Ts> using void_t = void;
+    }
+
     // Maps any well-formed sequence of types to void; the detection idiom's
     // building block (equivalent to std::void_t).
     template <typename...>
@@ -201,19 +208,19 @@ namespace mystl
     template <typename T>
     inline constexpr bool is_empty_v = __is_empty(T);
 
-    // Проверяет, можно ли создать объект типа T из аргументов Args
+    // Checks if an object of type T can be created from arguments Args
     template <typename T, typename... Args>
     inline constexpr bool is_constructible_v = __is_constructible(T, Args...);
 
-    // Проверяет, можно ли создать объект без выброса исключений (noexcept)
+    // Checks if an object of type T can be created without throwing exceptions (noexcept)
     template <typename T, typename... Args>
     inline constexpr bool is_nothrow_constructible_v = __is_nothrow_constructible(T, Args...);
 
-    // Можно ли переместить объект без исключений
+    // Checks if an object of type T can be moved without throwing exceptions
     template <typename T>
     inline constexpr bool is_nothrow_move_constructible_v = __is_nothrow_constructible(T, T&&);
 
-    // Можно ли присвоить объект (перемещением) без исключений
+    // Checks if an object of type T can be assigned (via move) without throwing exceptions
     template <typename T>
     inline constexpr bool is_nothrow_move_assignable_v = __is_nothrow_assignable(T&, T&&);
 
