@@ -2,6 +2,7 @@
 
 #include "type_traits.hpp"
 #include "utility.hpp"
+#include "iterator.hpp" 
 #include <cstddef>    // For std::size_t
 #include <stdexcept>  // For std::out_of_range
 
@@ -20,6 +21,9 @@ namespace mystl
         using iterator        = T*;
         using const_iterator  = const T*;
 
+        using reverse_iterator       = mystl::reverse_iterator<iterator>;
+        using const_reverse_iterator = mystl::reverse_iterator<const_iterator>;
+
         T elements[N > 0 ? N : 1];
 
         constexpr iterator begin() noexcept { return elements; }
@@ -29,6 +33,14 @@ namespace mystl
         constexpr iterator end() noexcept { return elements + N; }
         constexpr const_iterator end() const noexcept { return elements + N; }
         constexpr const_iterator cend() const noexcept { return elements + N; }
+
+        constexpr reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
+        constexpr const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
+        constexpr const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(end()); }
+
+        constexpr reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
+        constexpr const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
+        constexpr const_reverse_iterator crend() const noexcept { return const_reverse_iterator(begin()); }
 
         constexpr reference operator[](size_type pos) noexcept 
         { 
