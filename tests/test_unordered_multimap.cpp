@@ -90,12 +90,12 @@ namespace
         explicit MMCountingAlloc(int i) : id(i) {}
         template <typename U> MMCountingAlloc(const MMCountingAlloc<U>& o) : id(o.id) {}
 
-        T* allocate(std::size_t n)
+        T* allocate(size_t n)
         {
             MMLedger::outstanding[id] += static_cast<long long>(n * sizeof(T));
             return static_cast<T*>(::operator new(n * sizeof(T)));
         }
-        void deallocate(T* p, std::size_t n) noexcept
+        void deallocate(T* p, size_t n) noexcept
         {
             MMLedger::outstanding[id] -= static_cast<long long>(n * sizeof(T));
             ::operator delete(p);

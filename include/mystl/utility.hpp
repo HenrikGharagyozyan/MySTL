@@ -2,6 +2,7 @@
 
 #include "type_traits.hpp" 
 
+
 namespace mystl
 {
     // ========================================================================
@@ -73,19 +74,19 @@ namespace mystl
     // ========================================================================
     // Index sequence
     // ========================================================================
-    template <std::size_t... Is>
+    template <size_t... Is>
     struct index_sequence {};
     
-    template <std::size_t N, std::size_t... Is>
+    template <size_t N, size_t... Is>
     struct make_index_sequence_impl : make_index_sequence_impl<N - 1, N - 1, Is...> {};
 
-    template <std::size_t... Is>
+    template <size_t... Is>
     struct make_index_sequence_impl<0, Is...> 
     {
         using type = index_sequence<Is...>;
     };
 
-    template <std::size_t N>
+    template <size_t N>
     using make_index_sequence = typename make_index_sequence_impl<N>::type;
 
 } // namespace mystl

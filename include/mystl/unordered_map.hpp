@@ -4,9 +4,10 @@
 #include "functional.hpp"
 #include "allocator.hpp"
 #include "utility.hpp"
+#include "cstddef.hpp"
 
-#include <cstddef>
 #include <stdexcept>
+
 
 namespace mystl
 {
@@ -27,7 +28,7 @@ namespace mystl
         using mapped_type     = T;
         using value_type      = mystl::Pair<const Key, T>;
         using size_type       = typename mystl::allocator_traits<Allocator>::size_type;
-        using difference_type = std::ptrdiff_t;
+        using difference_type = mystl::ptrdiff_t;
         using hasher          = Hash;
         using key_equal       = KeyEqual;
         using allocator_type  = Allocator;

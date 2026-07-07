@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstddef> // for std::size_t, std::ptrdiff_t
+#include "cstddef.hpp" // for mystl::size_t, mystl::ptrdiff_t
 #include <new>     // for std::bad_alloc
 
 namespace mystl
@@ -13,8 +13,8 @@ namespace mystl
         using const_pointer   = const T*;
         using reference       = T&;
         using const_reference = const T&;
-        using size_type       = std::size_t;
-        using difference_type = std::ptrdiff_t;
+        using size_type       = mystl::size_t;
+        using difference_type = mystl::ptrdiff_t;
 
         // ========================================================================
         // REBIND MECHANISM

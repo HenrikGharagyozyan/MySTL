@@ -34,7 +34,7 @@ namespace mystl
         using pointer                = typename mystl::allocator_traits<Allocator>::pointer;
         using const_pointer          = typename mystl::allocator_traits<Allocator>::const_pointer;
         using size_type              = typename mystl::allocator_traits<Allocator>::size_type;
-        using difference_type        = std::ptrdiff_t;
+        using difference_type        = mystl::ptrdiff_t;
 
     private:
         using Tree = RBTree<Key, value_type, Select1st<value_type>, Compare, Allocator>;

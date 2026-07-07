@@ -1,7 +1,8 @@
 #pragma once
 
 #include "utility.hpp"
-#include <cstddef>
+#include "cstddef.hpp"
+
 #include <cstdint>
 #include <string>
 
@@ -197,31 +198,31 @@ namespace mystl
     namespace detail 
     {
         // FNV-1a hashing algorithm
-        inline constexpr std::size_t fnv1a_32(const char* s, std::size_t count) noexcept 
+        inline constexpr size_t fnv1a_32(const char* s, size_t count) noexcept 
         {
-            std::size_t hash = 2166136261u;
-            for (std::size_t i = 0; i < count; ++i) 
+            size_t hash = 2166136261u;
+            for (size_t i = 0; i < count; ++i) 
             {
-                hash ^= static_cast<std::size_t>(static_cast<unsigned char>(s[i]));
+                hash ^= static_cast<size_t>(static_cast<unsigned char>(s[i]));
                 hash *= 16777619u;
             }
             return hash;
         }
 
-        inline constexpr std::size_t fnv1a_64(const char* s, std::size_t count) noexcept
+        inline constexpr size_t fnv1a_64(const char* s, size_t count) noexcept
         {
-            std::size_t hash = 14695981039346656037ull;
-            for (std::size_t i = 0; i < count; ++i) 
+            size_t hash = 14695981039346656037ull;
+            for (size_t i = 0; i < count; ++i) 
             {
-                hash ^= static_cast<std::size_t>(static_cast<unsigned char>(s[i]));
+                hash ^= static_cast<size_t>(static_cast<unsigned char>(s[i]));
                 hash *= 1099511628211ull;
             }
             return hash;
         }
 
-        inline constexpr std::size_t hash_bytes(const void* ptr, std::size_t count) noexcept 
+        inline constexpr size_t hash_bytes(const void* ptr, size_t count) noexcept 
         {
-            if constexpr (sizeof(std::size_t) == 8)
+            if constexpr (sizeof(size_t) == 8)
                 return fnv1a_64(static_cast<const char*>(ptr), count);
             else
                 return fnv1a_32(static_cast<const char*>(ptr), count);
@@ -235,8 +236,8 @@ namespace mystl
     // Macro for fast generation of identity hashes for integer types
     #define MYSTL_GENERATE_INT_HASH(Type) \
         template <> struct hash<Type> { \
-            constexpr std::size_t operator()(Type v) const noexcept { \
-                return static_cast<std::size_t>(v); \
+            constexpr size_t operator()(Type v) const noexcept { \
+                return static_cast<size_t>(v); \
             } \
         }
 
@@ -259,7 +260,7 @@ namespace mystl
     template <>
     struct hash<float> 
     {
-        std::size_t operator()(float v) const noexcept 
+        size_t operator()(float v) const noexcept 
         {
             return v == 0.0f ? 0 : detail::hash_bytes(&v, sizeof(v));
         }
@@ -268,7 +269,7 @@ namespace mystl
     template <>
     struct hash<double> 
     {
-        std::size_t operator()(double v) const noexcept 
+        size_t operator()(double v) const noexcept 
         {
             return v == 0.0 ? 0 : detail::hash_bytes(&v, sizeof(v));
         }
@@ -278,9 +279,9 @@ namespace mystl
     template <typename T>
     struct hash<T*>
     {
-        std::size_t operator()(T* ptr) const noexcept
+        size_t operator()(T* ptr) const noexcept
         {
-            return reinterpret_cast<std::size_t>(ptr);
+            return reinterpret_cast<size_t>(ptr);
         }
     };
 
@@ -288,7 +289,7 @@ namespace mystl
     template <>
     struct hash<std::string>
     {
-        std::size_t operator()(const std::string& s) const noexcept
+        size_t operator()(const std::string& s) const noexcept
         {
             return detail::hash_bytes(s.data(), s.size());
         }
@@ -298,7 +299,7 @@ namespace mystl
     template <>
     struct hash<std::string_view>
     {
-        std::size_t operator()(std::string_view sv) const noexcept
+        size_t operator()(std::string_view sv) const noexcept
         {
             return detail::hash_bytes(sv.data(), sv.size());
         }

@@ -6,7 +6,7 @@
 using namespace mystl;
 
 // ============================================================================
-// 1. Конструкторы
+// 1. Constructors
 // ============================================================================
 
 TEST(PairTest, DefaultConstructor)
@@ -27,33 +27,33 @@ TEST(PairTest, CopyAndMoveConstructor)
 {
     Pair<int, int> p1(1, 2);
     
-    // Копирование
+    // Copying
     Pair<int, int> p2(p1);
     EXPECT_EQ(p2.first, 1);
     EXPECT_EQ(p2.second, 2);
 
-    // Перемещение
+    // Moving
     Pair<int, int> p3(mystl::move(p1));
     EXPECT_EQ(p3.first, 1);
     EXPECT_EQ(p3.second, 2);
 }
 
 // ============================================================================
-// 2. make_pair и perfect forwarding (decay_t)
+// 2. make_pair and perfect forwarding (decay_t)
 // ============================================================================
 
 TEST(PairTest, MakePair)
 {
     auto p = mystl::make_pair(10, 3.14);
     
-    // Проверяем типы, чтобы убедиться, что decay_t работает правильно
+    // Check types to ensure decay_t works correctly
     static_assert(std::is_same_v<decltype(p.first), int>, "first should be int");
     static_assert(std::is_same_v<decltype(p.second), double>, "second should be double");
     
     EXPECT_EQ(p.first, 10);
     EXPECT_EQ(p.second, 3.14);
 
-    // Проверка decay для массивов (const char[N] -> const char*)
+    // Verify decay for arrays (const char[N] -> const char*)
     int x = 5;
     auto p2 = mystl::make_pair(x, "test_string");
     static_assert(std::is_same_v<decltype(p2.second), const char*>, "string literal should decay to const char*");
@@ -63,7 +63,7 @@ TEST(PairTest, MakePair)
 }
 
 // ============================================================================
-// 3. Операторы сравнения (Лексикографическое)
+// 3. Comparison operators (Lexicographic)
 // ============================================================================
 
 TEST(PairTest, Comparisons)
@@ -73,18 +73,18 @@ TEST(PairTest, Comparisons)
     Pair<int, int> p3(1, 3);
     Pair<int, int> p4(0, 5);
 
-    // Равенство
+    // Equality
     EXPECT_TRUE(p1 == p2);
     EXPECT_FALSE(p1 != p2);
     
-    // Меньше/Больше (первый элемент совпадает, сравниваем второй)
+    // Less/Greater (first element equal, compare second)
     EXPECT_TRUE(p1 != p3);
     EXPECT_TRUE(p1 < p3);
     EXPECT_TRUE(p3 > p1);
     EXPECT_TRUE(p1 <= p3);
     EXPECT_TRUE(p3 >= p1);
     
-    // Меньше/Больше (отличается первый элемент)
+    // Less/Greater (first element differs)
     EXPECT_TRUE(p4 < p1); // 0 < 1
     EXPECT_TRUE(p1 > p4);
     EXPECT_TRUE(p4 <= p1);
@@ -99,14 +99,14 @@ TEST(PairTest, Swap)
     Pair<int, int> p1(1, 2);
     Pair<int, int> p2(3, 4);
     
-    // Метод класса
+    // Member method
     p1.swap(p2);
     EXPECT_EQ(p1.first, 3);
     EXPECT_EQ(p1.second, 4);
     EXPECT_EQ(p2.first, 1);
     EXPECT_EQ(p2.second, 2);
     
-    // Свободная функция (ADL)
+    // Free function (ADL)
     mystl::swap(p1, p2);
     EXPECT_EQ(p1.first, 1);
     EXPECT_EQ(p1.second, 2);

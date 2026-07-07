@@ -2,7 +2,7 @@
 
 #include "utility.hpp"
 #include "iterator.hpp"
-#include <cstddef>
+#include "cstddef.hpp"
 #include <cstring> // For std::memmove
 
 namespace mystl 
@@ -260,7 +260,7 @@ namespace mystl
     template <typename RandomIt, typename Compare>
     void push_heap(RandomIt first, RandomIt last, Compare comp) 
     {
-        using Distance = std::ptrdiff_t;
+        using Distance = mystl::ptrdiff_t;
         Distance len = last - first;
         if (len < 2) 
             return;
@@ -292,13 +292,13 @@ namespace mystl
         // Swap the root (first element) with the last one
         mystl::swap(*first, *(last - 1));
         // Restore the heap property for the remaining elements
-        sift_down(first, static_cast<std::ptrdiff_t>(last - first - 1), static_cast<std::ptrdiff_t>(0), comp);
+        sift_down(first, static_cast<mystl::ptrdiff_t>(last - first - 1), static_cast<mystl::ptrdiff_t>(0), comp);
     }
 
     template <typename RandomIt, typename Compare>
     void make_heap(RandomIt first, RandomIt last, Compare comp) 
     {
-        using Distance = std::ptrdiff_t;
+        using Distance = mystl::ptrdiff_t;
         Distance len = last - first;
         if (len < 2) 
             return;

@@ -5,9 +5,10 @@
 #include "memory.hpp"
 #include "allocator.hpp"
 #include "algorithm.hpp"
+#include "cstddef.hpp"
 
-#include <cstddef>
 #include <initializer_list>
+
 
 namespace mystl 
 {
@@ -42,7 +43,7 @@ namespace mystl
     public:
         using iterator_category = mystl::forward_iterator_tag;
         using value_type        = Value;
-        using difference_type   = std::ptrdiff_t;
+        using difference_type   = mystl::ptrdiff_t;
         using pointer           = Pointer;
         using reference         = Reference;
 
@@ -108,7 +109,7 @@ namespace mystl
         using value_type             = T;
         using allocator_type         = Allocator;
         using size_type              = typename allocator_traits_type::size_type;
-        using difference_type        = std::ptrdiff_t;
+        using difference_type        = mystl::ptrdiff_t;
         using reference              = T&;
         using const_reference        = const T&;
         using pointer                = T*;

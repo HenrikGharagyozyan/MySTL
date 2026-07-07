@@ -97,3 +97,7 @@ gtest_discover_tests(test_tuple)
 add_executable(test_array test_array.cpp)
 target_link_libraries(test_array PRIVATE mystl GTest::gtest_main)
 gtest_discover_tests(test_array)
+
+add_executable(test_unique_ptr test_unique_ptr.cpp)
+target_link_libraries(test_unique_ptr PRIVATE mystl GTest::gtest_main)
+gtest_discover_tests(test_unique_ptr)

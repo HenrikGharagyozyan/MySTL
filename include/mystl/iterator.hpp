@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstddef>
-
+#include "cstddef.hpp"
 #include "type_traits.hpp"
+
 
 namespace mystl
 {
@@ -24,7 +24,7 @@ namespace mystl
     template<
         typename Category,
         typename T,
-        typename Distance = std::ptrdiff_t,
+        typename Distance = mystl::ptrdiff_t,
         typename Pointer = T*,
         typename Reference = T&
     >
@@ -71,7 +71,7 @@ namespace mystl
     template <typename T>
     struct iterator_traits<T*>
     {
-        using difference_type   = std::ptrdiff_t;
+        using difference_type   = mystl::ptrdiff_t;
         using value_type        = T;
         using pointer           = T*;
         using reference         = T&;
@@ -81,7 +81,7 @@ namespace mystl
     template <typename T>
     struct iterator_traits<const T*>
     {
-        using difference_type   = std::ptrdiff_t;
+        using difference_type   = mystl::ptrdiff_t;
         using value_type        = T;
         using pointer           = const T*;
         using reference         = const T&;

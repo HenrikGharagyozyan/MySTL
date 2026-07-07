@@ -2,12 +2,13 @@
 
 #include "type_traits.hpp"
 #include "utility.hpp"
-#include <cstddef> // Для size_t
+#include "cstddef.hpp"
+
 
 namespace mystl
 {
     // ========================================================================
-    // 1. TupleLeaf: Хранение отдельного элемента
+    // 1. TupleLeaf: Storage for a single element
     // ========================================================================
     template <size_t I, typename T>
     struct TupleLeaf
@@ -37,7 +38,7 @@ namespace mystl
     };
 
     // ========================================================================
-    // 2. TupleImpl: База, наследующая все листья
+    // 2. TupleImpl: Base class inheriting all leaves
     // ========================================================================
     template <typename IndexSeq, typename... Ts>
     struct TupleImpl;
@@ -63,17 +64,17 @@ namespace mystl
     };
 
     // ========================================================================
-    // 3. Tuple: Публичный интерфейс
+    // 3. Tuple: Public interface
     // ========================================================================
     template <typename... Ts>
     struct Tuple : TupleImpl<make_index_sequence<sizeof...(Ts)>, Ts...>
     {
         using base_type = TupleImpl<make_index_sequence<sizeof...(Ts)>, Ts...>;
-        using base_type::base_type; // Наследуем конструкторы
+        using base_type::base_type; // Inherit constructors
     };
 
     // ========================================================================
-    // 4. Трейты доступа: tuple_element и tuple_size
+    // 4. Access traits: tuple_element and tuple_size
     // ========================================================================
     template <size_t I, typename TupleType>
     struct tuple_element;
@@ -134,7 +135,7 @@ namespace mystl
     }
 
     // ========================================================================
-    // 7. Операторы сравнения
+    // 7. Comparison operators
     // ========================================================================
     namespace detail
     {
@@ -144,7 +145,7 @@ namespace mystl
             return ((mystl::get<Is>(a) == mystl::get<Is>(b)) && ...);
         }
 
-        // Рекурсивный помощник для лексикографического сравнения (operator<)
+        // Recursive helper for lexicographical comparison (operator<)
         template <size_t I, size_t Size>
         struct TupleCompare
         {
@@ -157,7 +158,7 @@ namespace mystl
             }
         };
 
-        // Базовый случай рекурсии
+        // Base case of recursion
         template <size_t Size>
         struct TupleCompare<Size, Size>
         {
