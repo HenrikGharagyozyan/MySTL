@@ -108,7 +108,7 @@ namespace mystl
     public:
         using value_type             = T;
         using allocator_type         = Allocator;
-        using size_type              = mystl::size_t;
+        using size_type              = typename allocator_traits_type::size_type;
         using difference_type        = mystl::ptrdiff_t;
         using reference              = T&;
         using const_reference        = const T&;

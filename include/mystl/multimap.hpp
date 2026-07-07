@@ -33,7 +33,7 @@ namespace mystl
         using const_reference        = const value_type&;
         using pointer                = typename mystl::allocator_traits<Allocator>::pointer;
         using const_pointer          = typename mystl::allocator_traits<Allocator>::const_pointer;
-        using size_type              = mystl::size_t;
+        using size_type              = typename mystl::allocator_traits<Allocator>::size_type;
         using difference_type        = mystl::ptrdiff_t;
 
     private:
