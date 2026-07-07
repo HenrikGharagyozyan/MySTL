@@ -4,8 +4,7 @@
 #include "functional.hpp"
 #include "allocator.hpp"
 #include "utility.hpp"
-
-#include <cstddef>
+#include "cstddef.hpp"
 
 namespace mystl
 {
@@ -26,8 +25,8 @@ namespace mystl
     public:
         using key_type        = Key;
         using value_type      = Key;
-        using size_type       = std::size_t;
-        using difference_type = std::ptrdiff_t;
+        using size_type       = mystl::size_t;
+        using difference_type = mystl::ptrdiff_t;
         using hasher          = Hash;
         using key_equal       = KeyEqual;
         using allocator_type  = Allocator;

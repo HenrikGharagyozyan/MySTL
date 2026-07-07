@@ -35,7 +35,7 @@ TEST(AllocatorTraitsTest, MaxSizeDefault)
     using A  = mystl::Allocator<int>;
     using Tr = mystl::allocator_traits<A>;
     A a;
-    EXPECT_EQ(Tr::max_size(a), static_cast<std::size_t>(-1) / sizeof(int));
+    EXPECT_EQ(Tr::max_size(a), static_cast<size_t>(-1) / sizeof(int));
 }
 
 TEST(AllocatorTraitsTest, SelectOnCopyDefaultReturnsCopy)
@@ -67,10 +67,10 @@ struct StatefulAlloc
     explicit StatefulAlloc(int i) : id(i) {}
     template <typename U> StatefulAlloc(const StatefulAlloc<U>& o) : id(o.id) {}
 
-    T* allocate(std::size_t n) { return static_cast<T*>(::operator new(n * sizeof(T))); }
-    void deallocate(T* p, std::size_t) noexcept { ::operator delete(p); }
+    T* allocate(size_t n) { return static_cast<T*>(::operator new(n * sizeof(T))); }
+    void deallocate(T* p, size_t) noexcept { ::operator delete(p); }
 
-    std::size_t   max_size() const noexcept { return 42; }
+    size_t   max_size() const noexcept { return 42; }
     StatefulAlloc select_on_container_copy_construction() const { return StatefulAlloc(id + 100); }
 };
 
@@ -111,8 +111,8 @@ struct MinimalAlloc
 {
     using value_type = T;
     template <typename U> struct rebind { using other = MinimalAlloc<U>; };
-    T* allocate(std::size_t n) { return static_cast<T*>(::operator new(n * sizeof(T))); }
-    void deallocate(T* p, std::size_t) noexcept { ::operator delete(p); }
+    T* allocate(size_t n) { return static_cast<T*>(::operator new(n * sizeof(T))); }
+    void deallocate(T* p, size_t) noexcept { ::operator delete(p); }
 };
 
 TEST(AllocatorTraitsTest, MinimalSynthesizedDefaults)
@@ -122,14 +122,14 @@ TEST(AllocatorTraitsTest, MinimalSynthesizedDefaults)
 
     static_assert(mystl::is_same_v<Tr::pointer, double*>);
     static_assert(mystl::is_same_v<Tr::const_pointer, const double*>);
-    static_assert(mystl::is_same_v<Tr::size_type, std::size_t>);
-    static_assert(mystl::is_same_v<Tr::difference_type, std::ptrdiff_t>);
+    static_assert(mystl::is_same_v<Tr::size_type, size_t>);
+    static_assert(mystl::is_same_v<Tr::difference_type, ptrdiff_t>);
 
     static_assert(!Tr::propagate_on_container_move_assignment::value);
     static_assert(Tr::is_always_equal::value, "empty allocator defaults to always-equal");
 
     A a;
-    EXPECT_EQ(Tr::max_size(a), static_cast<std::size_t>(-1) / sizeof(double));
+    EXPECT_EQ(Tr::max_size(a), static_cast<size_t>(-1) / sizeof(double));
 
     // No socc hook: default returns a copy (compiles and runs).
     A b = Tr::select_on_container_copy_construction(a);

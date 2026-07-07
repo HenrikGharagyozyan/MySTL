@@ -5,10 +5,11 @@
 #include "memory.hpp"
 #include "allocator.hpp"
 #include "algorithm.hpp"
+#include "cstddef.hpp"
 
-#include <cstddef>
 #include <initializer_list>
 #include <stdexcept>
+
 
 namespace mystl 
 {
@@ -23,7 +24,7 @@ namespace mystl
         using allocator_type         = Allocator;
         using allocator_traits_type  = mystl::allocator_traits<Allocator>;
         using size_type              = typename allocator_traits_type::size_type;
-        using difference_type        = std::ptrdiff_t;
+        using difference_type        = mystl::ptrdiff_t;
         using reference              = T&;
         using const_reference        = const T&;
         using pointer                = typename allocator_traits_type::pointer;

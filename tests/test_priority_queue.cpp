@@ -13,7 +13,7 @@ struct StatefulAllocator
 {
     using value_type = T;
     using pointer = T*;
-    using size_type = std::size_t;
+    using size_type = size_t;
 
     int id = 0;
 

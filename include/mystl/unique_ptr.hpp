@@ -2,7 +2,8 @@
 
 #include "utility.hpp"
 #include "type_traits.hpp"
-#include <cstddef>
+#include "cstddef.hpp"
+
 
 namespace mystl 
 {
@@ -270,7 +271,7 @@ namespace mystl
         }
 
         // Index operator instead of dereference
-        mystl::add_lvalue_reference_t<T> operator[](std::size_t i) const 
+        mystl::add_lvalue_reference_t<T> operator[](size_t i) const 
         {
             return storage_.ptr_[i];
         }
@@ -291,7 +292,7 @@ namespace mystl
     // For arrays of unknown bound (e.g. make_unique<int[]>(5))
     template <typename T>
     mystl::enable_if_t<mystl::is_unbounded_array_v<T>, unique_ptr<T>>
-    make_unique(std::size_t n) 
+    make_unique(size_t n) 
     {
         return unique_ptr<T>(new mystl::remove_extent_t<T>[n]());
     }

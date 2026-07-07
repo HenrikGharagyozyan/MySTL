@@ -171,10 +171,10 @@ namespace mystl
         template <typename A, typename = void> struct at_const_void_pointer { using type = const void*; };
         template <typename A> struct at_const_void_pointer<A, mystl::void_t<typename A::const_void_pointer>> { using type = typename A::const_void_pointer; };
 
-        template <typename A, typename = void> struct at_difference_type    { using type = std::ptrdiff_t; };
+        template <typename A, typename = void> struct at_difference_type    { using type = ptrdiff_t; };
         template <typename A> struct at_difference_type<A, mystl::void_t<typename A::difference_type>>       { using type = typename A::difference_type; };
 
-        template <typename A, typename = void> struct at_size_type          { using type = std::size_t; };
+        template <typename A, typename = void> struct at_size_type          { using type = size_t; };
         template <typename A> struct at_size_type<A, mystl::void_t<typename A::size_type>>                   { using type = typename A::size_type; };
 
         template <typename A, typename = void> struct at_pocca              { using type = false_type; };

@@ -5,16 +5,16 @@
 #include "memory.hpp"
 #include "allocator.hpp"
 #include "algorithm.hpp"
+#include "cstddef.hpp"
 
-#include <cstddef>
 #include <initializer_list>
 
 namespace mystl 
 {
     // Define the deque block buffer size in bytes (minimum 512 bytes or 1 element)
-    inline constexpr std::size_t deque_buf_size(std::size_t size) 
+    inline constexpr size_t deque_buf_size(size_t size) 
     {
-        return size < 512 ? std::size_t(512 / size) : std::size_t(1);
+        return size < 512 ? size_t(512 / size) : size_t(1);
     }
 
     // ========================================================================
@@ -27,7 +27,7 @@ namespace mystl
         using value_type        = T;
         using pointer           = Pointer;
         using reference         = Reference;
-        using difference_type   = std::ptrdiff_t;
+        using difference_type   = mystl::ptrdiff_t;
 
         using map_pointer = T**;
         using Self        = DequeIterator;
@@ -38,7 +38,7 @@ namespace mystl
         T* last;          // Pointer to the end of the current block (exclusive)
         map_pointer node; // Pointer to the block-map entry
 
-        static constexpr std::size_t buffer_size() 
+        static constexpr size_t buffer_size() 
         {
             return deque_buf_size(sizeof(T));
         }
@@ -153,7 +153,7 @@ namespace mystl
         using allocator_type         = Allocator;
         using allocator_traits_type  = mystl::allocator_traits<Allocator>;
         using size_type              = typename allocator_traits_type::size_type;
-        using difference_type        = std::ptrdiff_t;
+        using difference_type        = mystl::ptrdiff_t;
         using reference              = T&;
         using const_reference        = const T&;
         using pointer                = T*;

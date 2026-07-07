@@ -3,17 +3,17 @@
 #include "type_traits.hpp"
 #include "utility.hpp"
 #include "iterator.hpp" 
-#include <cstddef>    // For std::size_t
+#include "cstddef.hpp"
 #include <stdexcept>  // For std::out_of_range
 
 namespace mystl
 {
-    template <typename T, std::size_t N>
+    template <typename T, size_t N>
     struct array
     {
         using value_type      = T;
-        using size_type       = std::size_t;
-        using difference_type = std::ptrdiff_t;
+        using size_type       = size_t;
+        using difference_type = ptrdiff_t;
         using reference       = T&;
         using const_reference = const T&;
         using pointer         = T*;
@@ -93,16 +93,16 @@ namespace mystl
     };
 
 
-    template <typename T, std::size_t N>
+    template <typename T, size_t N>
     constexpr void swap(array<T, N>& lhs, array<T, N>& rhs) noexcept(noexcept(lhs.swap(rhs)))
     {
         lhs.swap(rhs);
     }
 
-    template <typename T, std::size_t N>
+    template <typename T, size_t N>
     constexpr bool operator==(const array<T, N>& lhs, const array<T, N>& rhs)
     {
-        for (std::size_t i = 0; i < N; ++i) 
+        for (size_t i = 0; i < N; ++i) 
         {
             if (!(lhs[i] == rhs[i])) 
                 return false;
@@ -110,7 +110,7 @@ namespace mystl
         return true;
     }
 
-    template <typename T, std::size_t N>
+    template <typename T, size_t N>
     constexpr bool operator!=(const array<T, N>& lhs, const array<T, N>& rhs)
     {
         return !(lhs == rhs);
@@ -122,28 +122,28 @@ namespace mystl
     // ========================================================================
 
     // Specialization of get<I> for array
-    template <std::size_t I, typename T, std::size_t N>
+    template <size_t I, typename T, size_t N>
     constexpr T& get(array<T, N>& a) noexcept
     {
         static_assert(I < N, "mystl::get: index out of bounds");
         return a.elements[I];
     }
 
-    template <std::size_t I, typename T, std::size_t N>
+    template <size_t I, typename T, size_t N>
     constexpr const T& get(const array<T, N>& a) noexcept
     {
         static_assert(I < N, "mystl::get: index out of bounds");
         return a.elements[I];
     }
 
-    template <std::size_t I, typename T, std::size_t N>
+    template <size_t I, typename T, size_t N>
     constexpr T&& get(array<T, N>&& a) noexcept
     {
         static_assert(I < N, "mystl::get: index out of bounds");
         return mystl::move(a.elements[I]);
     }
 
-    template <std::size_t I, typename T, std::size_t N>
+    template <size_t I, typename T, size_t N>
     constexpr const T&& get(const array<T, N>&& a) noexcept
     {
         static_assert(I < N, "mystl::get: index out of bounds");
@@ -152,14 +152,14 @@ namespace mystl
 
     // Forward declarations from tuple.hpp
     template <typename TupleType> struct tuple_size;
-    template <std::size_t I, typename TupleType> struct tuple_element;
+    template <size_t I, typename TupleType> struct tuple_element;
 
     // Specialization of tuple_size for array
-    template <typename T, std::size_t N>
-    struct tuple_size<array<T, N>> : integral_constant<std::size_t, N> {};
+    template <typename T, size_t N>
+    struct tuple_size<array<T, N>> : integral_constant<size_t, N> {};
 
     // Specialization of tuple_element for array
-    template <std::size_t I, typename T, std::size_t N>
+    template <size_t I, typename T, size_t N>
     struct tuple_element<I, array<T, N>>
     {
         static_assert(I < N, "mystl::tuple_element: index out of bounds");

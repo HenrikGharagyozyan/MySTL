@@ -27,7 +27,7 @@ struct StatefulAllocator
 {
     using value_type = T;
     using pointer = T*;
-    using size_type = std::size_t;
+    using size_type = size_t;
 
     int id = 0;
 
@@ -229,7 +229,7 @@ TEST(DequeTest, CountValueConstructionNotHijacked)
     mystl::Deque<int> d(5, 10);
 
     EXPECT_EQ(d.size(), 5u);
-    for (std::size_t i = 0; i < d.size(); ++i)
+    for (size_t i = 0; i < d.size(); ++i)
         EXPECT_EQ(d[i], 10);
 }
 
