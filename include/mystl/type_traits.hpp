@@ -84,7 +84,7 @@ namespace mystl
     template <typename T> using add_pointer_t = typename add_pointer<T>::type;
 
     // --- remove_extent ---
-    // Убирает одну размерность массива: T[] -> T, T[N] -> T
+    // Removes one array dimension: T[] -> T, T[N] -> T
     template <typename T>
     struct remove_extent { using type = T; };
 
@@ -209,7 +209,7 @@ namespace mystl
     using conditional_t = typename conditional<B, T, F>::type;
 
     // ========================================================================
-    // COMPILER INTRINSICS (Magicheskie funkcii kompilyatora)
+    // COMPILER INTRINSICS (compiler magic functions)
     // ========================================================================
     
     template <typename T>

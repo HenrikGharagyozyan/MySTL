@@ -270,4 +270,4 @@ namespace mystl
 // SMART POINTERS INCLUSIONS 
 // ========================================================================
 #include "unique_ptr.hpp"
-// #include "shared_ptr.hpp" // TODO: Implement shared_ptr and weak_ptr in the future
+#include "shared_ptr.hpp" 

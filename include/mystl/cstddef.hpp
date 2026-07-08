@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstddef> // Подтягиваем базовые типы из C
+#include <cstddef> // Bring in basic types from C
 
 namespace mystl 
 {
