@@ -105,3 +105,7 @@ gtest_discover_tests(test_unique_ptr)
 add_executable(test_shared_ptr test_shared_ptr.cpp)
 target_link_libraries(test_shared_ptr PRIVATE mystl GTest::gtest_main)
 gtest_discover_tests(test_shared_ptr)
+
+add_executable(test_weak_ptr test_weak_ptr.cpp)
+target_link_libraries(test_weak_ptr PRIVATE mystl GTest::gtest_main)
+gtest_discover_tests(test_weak_ptr)
