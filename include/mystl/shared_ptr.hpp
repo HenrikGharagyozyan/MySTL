@@ -85,4 +85,122 @@ namespace mystl
         }
     };
 
+
+    // ========================================================================
+    // SHARED_PTR
+    // ========================================================================
+
+    template <typename T>
+    class shared_ptr 
+    {
+    private:
+        T*                  ptr_{nullptr}; // Pointer to the object
+        control_block_base* cb_{nullptr};  // Pointer to the control block
+
+        // Friend class to enable conversion of shared_ptr<Derived> to shared_ptr<Base>
+        template <typename U> friend class shared_ptr;
+
+    public:
+        // Default constructor
+        constexpr shared_ptr() noexcept = default;
+        constexpr shared_ptr(mystl::nullptr_t) noexcept : shared_ptr() {}
+
+        template <typename Y>
+        explicit shared_ptr(Y* p) 
+        {
+            if (p) 
+            {
+                ptr_ = p;
+                cb_  = new control_block_ptr<Y>(p);
+            }
+        }
+
+        shared_ptr(const shared_ptr& other) noexcept 
+            : ptr_(other.ptr_), cb_(other.cb_)
+        {
+            if (cb_) 
+            {
+                cb_->add_shared();
+            }
+        }
+
+        // Copy constructor with type conversion (Derived* -> Base*)
+        template <typename Y>
+        shared_ptr(const shared_ptr<Y>& other) noexcept 
+            : ptr_(other.ptr_), cb_(other.cb_)
+        {
+            if (cb_) 
+            {
+                cb_->add_shared();
+            }
+        }
+
+        shared_ptr(shared_ptr&& other) noexcept 
+            : ptr_(other.ptr_), cb_(other.cb_)
+        {
+            other.ptr_ = nullptr;
+            other.cb_  = nullptr;
+        }
+
+        template <typename Y>
+        shared_ptr(shared_ptr<Y>&& other) noexcept 
+            : ptr_(other.ptr_), cb_(other.cb_)
+        {
+            other.ptr_ = nullptr;
+            other.cb_  = nullptr;
+        }
+
+        ~shared_ptr() 
+        {
+            if (cb_) 
+                cb_->release_shared();
+        }
+
+        shared_ptr& operator=(const shared_ptr& r) noexcept 
+        {
+            // Use Copy-and-Swap idiom for safe assignment
+            shared_ptr(r).swap(*this);
+            return *this;
+        }
+
+        shared_ptr& operator=(shared_ptr&& r) noexcept 
+        {
+            shared_ptr(mystl::move(r)).swap(*this);
+            return *this;
+        }
+
+        void swap(shared_ptr& other) noexcept 
+        {
+            mystl::swap(ptr_, other.ptr_);
+            mystl::swap(cb_, other.cb_);
+        }
+
+        void reset() noexcept 
+        {
+            shared_ptr().swap(*this);
+        }
+
+        // Observers
+        T* get() const noexcept { return ptr_; }
+        
+        long use_count() const noexcept 
+        {
+            return cb_ ? cb_->shared_count.load(std::memory_order_relaxed) : 0;
+        }
+
+        bool unique() const noexcept { return use_count() == 1; }
+
+        explicit operator bool() const noexcept { return ptr_ != nullptr; }
+
+        T& operator*() const noexcept { return *ptr_; }
+        T* operator->() const noexcept { return ptr_; }
+    };
+
+    // Global swap for mystl::shared_ptr
+    template <typename T>
+    void swap(shared_ptr<T>& a, shared_ptr<T>& b) noexcept 
+    {
+        a.swap(b);
+    }
+
 } // namespace mystl
