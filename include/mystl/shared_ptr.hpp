@@ -8,6 +8,9 @@
 namespace mystl 
 {
 
+    template <typename T> class weak_ptr;
+    template <typename T> class shared_ptr;
+
     // ========================================================================
     // CONTROL BLOCK 
     // ========================================================================
@@ -21,7 +24,7 @@ namespace mystl
         // Default constructor: 1 owner, 0 watchers
         constexpr control_block_base() noexcept 
             : shared_count(1)
-            , weak_count(0) 
+            , weak_count(1) 
         {
         }
 
@@ -43,39 +46,14 @@ namespace mystl
 
         // Thread-safe decrement of counter
         // Returns true if counter reaches zero
-        bool release_shared() noexcept 
+        void release_shared() noexcept 
         {
             // memory_order_acq_rel ensures that all memory operations are completed before we delete the object
             if (shared_count.fetch_sub(1, std::memory_order_acq_rel) == 1) 
             {
                 dispose(); // Delete the object
-                
-                // weak_count stores +1 "virtual" reference as long as at least one shared_ptr is alive.
-                // Therefore, when shared_ptr are exhausted, we subtract this virtual reference.
-                if (weak_count.fetch_sub(1, std::memory_order_acq_rel) == 0) 
-                {
-                    destroy(); // Delete the block itself
-                }
-                return true;
+                release_weak();
             }
-            return false;
-        }
-
-        // Потокобезопасная попытка увеличить счетчик shared_count, если он не равен 0.
-        // Используется в weak_ptr::lock().
-        bool lock() noexcept 
-        {
-            long count = shared_count.load(std::memory_order_relaxed);
-            do 
-            {
-                if (count == 0) 
-                {
-                    return false; // Объект уже удален, блокировка не удалась
-                }
-                // Пытаемся атомарно заменить count на count + 1
-            } while (!shared_count.compare_exchange_weak(count, count + 1,
-                        std::memory_order_acquire, std::memory_order_relaxed));
-            return true;
         }
 
         // Потокобезопасное увеличение счетчика weak_ptr
@@ -89,6 +67,23 @@ namespace mystl
         {
             if (weak_count.fetch_sub(1, std::memory_order_acq_rel) == 1) 
                 destroy(); // Если это был последний weak_ptr и shared_ptr тоже нет - удаляем блок
+        }
+
+        // Потокобезопасная попытка увеличить счетчик shared_count, если он не равен 0.
+        // Используется в weak_ptr::lock().
+        bool lock() noexcept 
+        {
+            // Пытаемся атомарно увеличить shared_count, если он > 0
+            long count = shared_count.load(std::memory_order_relaxed);
+            while (count != 0) 
+            {
+                if (shared_count.compare_exchange_weak(count, count + 1,
+                        std::memory_order_acquire, std::memory_order_relaxed)) 
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     };
 
@@ -164,6 +159,7 @@ namespace mystl
 
         // Friend class to enable conversion of shared_ptr<Derived> to shared_ptr<Base>
         template <typename U> friend class shared_ptr;
+        template <typename U> friend class weak_ptr;
 
     public:
         // Default constructor

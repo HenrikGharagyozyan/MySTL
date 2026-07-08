@@ -87,7 +87,6 @@ namespace mystl
             return use_count() == 0;
         }
 
-        // 9. Превращение в shared_ptr (самый важный метод)
         shared_ptr<T> lock() const noexcept 
         {
             if (cb_ && cb_->lock()) 
