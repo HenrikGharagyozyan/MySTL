@@ -1,7 +1,7 @@
 #include "mystl/memory.hpp"
 #include <gtest/gtest.h>
 
-// Вспомогательный класс для проверки утечек памяти
+// Helper class for leak detection
 struct Tracker 
 {
     static int instance_count;
@@ -13,7 +13,7 @@ struct Tracker
 
 int Tracker::instance_count = 0;
 
-// Тестовый фикстур для гарантии сброса счетчика перед каждым тестом
+// Test fixture to ensure the counter is reset before each test
 class UniquePtrTest : public ::testing::Test 
 {
 protected:
@@ -25,11 +25,11 @@ protected:
 
 TEST_F(UniquePtrTest, BasicAndEBCO) 
 {
-    // 1. Проверяем EBCO: размер unique_ptr с дефолтным делейтером 
-    // должен быть равен размеру обычного сырого указателя.
+    // 1. Check EBCO: unique_ptr with the default deleter
+    // should be the same size as a raw pointer.
     static_assert(sizeof(mystl::unique_ptr<int>) == sizeof(int*), "EBCO failed! unique_ptr has memory overhead.");
 
-    // 2. Базовое создание и деструкция
+    // 2. Basic construction and destruction
     EXPECT_EQ(Tracker::instance_count, 0);
     {
         mystl::unique_ptr<Tracker> p(new Tracker(42));
@@ -39,7 +39,7 @@ TEST_F(UniquePtrTest, BasicAndEBCO)
         EXPECT_NE(p.get(), nullptr);
         EXPECT_TRUE(static_cast<bool>(p));
     }
-    // После выхода из скоупа объект должен уничтожиться
+    // After exiting the scope the object should be destroyed
     EXPECT_EQ(Tracker::instance_count, 0);
 }
 
@@ -50,14 +50,14 @@ TEST_F(UniquePtrTest, MoveSemantics)
         mystl::unique_ptr<Tracker> p1(new Tracker(100));
         EXPECT_EQ(Tracker::instance_count, 1);
 
-        // Конструктор перемещения
+        // Move constructor
         mystl::unique_ptr<Tracker> p2(mystl::move(p1));
         EXPECT_EQ(Tracker::instance_count, 1);
-        EXPECT_FALSE(static_cast<bool>(p1)); // p1 теперь пустой
-        EXPECT_TRUE(static_cast<bool>(p2));  // p2 теперь владеет ресурсом
+        EXPECT_FALSE(static_cast<bool>(p1)); // p1 is now empty
+        EXPECT_TRUE(static_cast<bool>(p2));  // p2 now owns the resource
         EXPECT_EQ(p2->value, 100);
 
-        // Оператор перемещающего присваивания
+        // Move assignment operator
         mystl::unique_ptr<Tracker> p3;
         p3 = mystl::move(p2);
         EXPECT_EQ(Tracker::instance_count, 1);
@@ -73,20 +73,20 @@ TEST_F(UniquePtrTest, Modifiers)
     {
         mystl::unique_ptr<Tracker> p(new Tracker(10));
         
-        // Проверка release()
+        // Test release()
         Tracker* raw = p.release();
         EXPECT_FALSE(static_cast<bool>(p));
         EXPECT_EQ(Tracker::instance_count, 1);
 
-        // Проверка reset()
-        p.reset(raw); // Снова отдаем под контроль
+        // Test reset()
+        p.reset(raw); // Return ownership back
         EXPECT_TRUE(static_cast<bool>(p));
         
-        p.reset(new Tracker(20)); // Старый должен удалиться, новый встать на его место
+        p.reset(new Tracker(20)); // Old object should be deleted, new one takes its place
         EXPECT_EQ(Tracker::instance_count, 1);
         EXPECT_EQ(p->value, 20);
 
-        p.reset(); // Полный сброс
+        p.reset(); // Full reset
         EXPECT_FALSE(static_cast<bool>(p));
         EXPECT_EQ(Tracker::instance_count, 0);
     }
@@ -96,7 +96,7 @@ TEST_F(UniquePtrTest, ArraySpecialization)
 {
     EXPECT_EQ(Tracker::instance_count, 0);
     {
-        // Проверяем работу специализации для массивов T[]
+        // Test specialization for arrays T[]
         mystl::unique_ptr<Tracker[]> arr(new Tracker[3]{Tracker(1), Tracker(2), Tracker(3)});
         EXPECT_EQ(Tracker::instance_count, 3);
         
@@ -104,7 +104,7 @@ TEST_F(UniquePtrTest, ArraySpecialization)
         EXPECT_EQ(arr[1].value, 2);
         EXPECT_EQ(arr[2].value, 3);
     }
-    // delete[] должен корректно вызвать деструкторы у всех элементов
+    // delete[] should correctly call destructors for all elements
     EXPECT_EQ(Tracker::instance_count, 0);
 }
 
@@ -112,7 +112,7 @@ TEST_F(UniquePtrTest, MakeUnique)
 {
     EXPECT_EQ(Tracker::instance_count, 0);
     {
-        // Одиночный объект
+        // Single object
         auto p = mystl::make_unique<Tracker>(777);
         EXPECT_EQ(Tracker::instance_count, 1);
         EXPECT_EQ(p->value, 777);
@@ -120,7 +120,7 @@ TEST_F(UniquePtrTest, MakeUnique)
     EXPECT_EQ(Tracker::instance_count, 0);
 
     {
-        // Массив через make_unique
+        // Array via make_unique
         auto arr = mystl::make_unique<Tracker[]>(5);
         EXPECT_EQ(Tracker::instance_count, 5);
     }
