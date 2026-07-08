@@ -85,6 +85,41 @@ namespace mystl
         }
     };
 
+    // Implementation of a control block that stores the object directly INSIDE itself.
+    // Used for make_shared.
+    template <typename T>
+    class control_block_obj final : public control_block_base 
+    {
+    private:
+        // Reserve raw memory of the required size and with alignment of type T
+        alignas(T) char storage_[sizeof(T)];
+
+    public:
+        // Block constructor accepts any arguments and constructs the object via placement new
+        template <typename... Args>
+        explicit control_block_obj(Args&&... args) 
+        {
+            ::new (static_cast<void*>(storage_)) T(mystl::forward<Args>(args)...);
+        }
+
+        void dispose() noexcept override 
+        {
+            // Explicitly call the object's destructor, but don't free the memory!
+            get_ptr()->~T();
+        }
+
+        void destroy() noexcept override 
+        {
+            // Free the entire control block's memory
+            delete this;
+        }
+
+        T* get_ptr() noexcept 
+        {
+            return reinterpret_cast<T*>(storage_);
+        }
+    };
+
 
     // ========================================================================
     // SHARED_PTR
@@ -194,6 +229,15 @@ namespace mystl
 
         T& operator*() const noexcept { return *ptr_; }
         T* operator->() const noexcept { return ptr_; }
+
+    private:
+        explicit shared_ptr(control_block_base* cb, T* ptr) noexcept 
+            : ptr_(ptr), cb_(cb) 
+        {
+        }
+
+        template <typename U, typename... Args>
+        friend shared_ptr<U> make_shared(Args&&... args);
     };
 
     // Global swap for mystl::shared_ptr
@@ -201,6 +245,14 @@ namespace mystl
     void swap(shared_ptr<T>& a, shared_ptr<T>& b) noexcept 
     {
         a.swap(b);
+    }
+
+    template <typename T, typename... Args>
+    shared_ptr<T> make_shared(Args&&... args) 
+    {
+        auto* cb = new control_block_obj<T>(mystl::forward<Args>(args)...);
+        
+        return shared_ptr<T>(cb, cb->get_ptr());
     }
 
 } // namespace mystl
