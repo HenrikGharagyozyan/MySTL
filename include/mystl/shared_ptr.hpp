@@ -60,6 +60,36 @@ namespace mystl
             }
             return false;
         }
+
+        // Потокобезопасная попытка увеличить счетчик shared_count, если он не равен 0.
+        // Используется в weak_ptr::lock().
+        bool lock() noexcept 
+        {
+            long count = shared_count.load(std::memory_order_relaxed);
+            do 
+            {
+                if (count == 0) 
+                {
+                    return false; // Объект уже удален, блокировка не удалась
+                }
+                // Пытаемся атомарно заменить count на count + 1
+            } while (!shared_count.compare_exchange_weak(count, count + 1,
+                        std::memory_order_acquire, std::memory_order_relaxed));
+            return true;
+        }
+
+        // Потокобезопасное увеличение счетчика weak_ptr
+        void add_weak() noexcept 
+        {
+            weak_count.fetch_add(1, std::memory_order_relaxed);
+        }
+
+        // Потокобезопасное уменьшение счетчика weak_ptr
+        void release_weak() noexcept 
+        {
+            if (weak_count.fetch_sub(1, std::memory_order_acq_rel) == 1) 
+                destroy(); // Если это был последний weak_ptr и shared_ptr тоже нет - удаляем блок
+        }
     };
 
     // Concrete implementation of control block for a raw pointer
@@ -183,6 +213,17 @@ namespace mystl
         {
             other.ptr_ = nullptr;
             other.cb_  = nullptr;
+        }
+
+        template <typename Y>
+        explicit shared_ptr(const weak_ptr<Y>& weak) 
+            : ptr_(weak.ptr_), cb_(weak.cb_)
+        {
+            if (cb_ && !cb_->lock()) 
+            {
+                ptr_ = nullptr;
+                cb_ = nullptr;
+            }
         }
 
         ~shared_ptr() 
