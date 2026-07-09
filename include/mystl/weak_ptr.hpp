@@ -19,7 +19,11 @@ namespace mystl
         constexpr weak_ptr() noexcept = default;
 
         template <typename Y>
+<<<<<<< HEAD
         weak_ptr(const shared_ptr<Y>& shared) noexcept 
+=======
+        weak_ptr(const shared_ptr<Y>& shared) noexcept  
+>>>>>>> 1660d6f (Add roadmap)
             : ptr_(shared.ptr_), cb_(shared.cb_) 
         {
             if (cb_) 
